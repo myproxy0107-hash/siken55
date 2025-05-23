@@ -180,7 +180,8 @@ def getVideoData(videoid):
             full_url = base_url + 'api/v1' + path
             print(full_url)
             try:
-                res = requests.get(full_url, headers=getRandomUserAgent(), timeout=max_api_wait_time)
+                res = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=(3.0, 3))
+
                 if res.status_code == requests.codes.ok and isJSON(res.text):
                     data = json.loads(res.text)
                     # 動画の有無チェック（必要なら）
