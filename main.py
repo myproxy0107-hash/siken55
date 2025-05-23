@@ -152,8 +152,7 @@ def getVideoData(videoid):
         'https://wakeupe.glitch.me/api/',
         'https://hortensia.glitch.me/api/',
         'https://wata27.glitch.me/api/',
-        'https://wakameme.glitch.me/api/',
-	'direct'
+        'https://wakameme.glitch.me/api/'
     ]
     fallback_apis = [("fallback", api) for api in fallback_api_list]
     random.shuffle(fallback_apis)
@@ -323,8 +322,6 @@ def getVideoData(videoid):
                 "view_count_text": i.get("viewCountText", "Load Failed")
             } for i in recommended_videos]
         ]
-    else:
-        raise APITimeoutError("Both Invidious and fallback APIs failed")
 
 def getSearchData(q, page):
 
