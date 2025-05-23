@@ -137,8 +137,7 @@ def getInfo(request):
 
 failed = "Load Failed"
 
-
-    def getVideoData(videoid):
+def getVideoData(videoid):
     path = f"/videos/{urllib.parse.quote(videoid)}"
     
     # primary (Invidious API) のエンドポイント
