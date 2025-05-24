@@ -143,7 +143,7 @@ def getVideoData(videoid):
     # primary (Invidious API) のエンドポイント
     primary_apis = [("primary", api) for api in invidious_api.video]
     
-    # fallback API のリスト（末尾は余分な文字が入らないように注意）
+    # fallback API のリスト（余分な文字が入らないように注意）
     fallback_api_list = [
         'https://watawata8.glitch.me/api/',
         'https://watawata37.glitch.me/api/',
@@ -208,13 +208,19 @@ def getVideoData(videoid):
                 continue
 
         elif api_type == "fallback":
+            # fallback API 利用時は最低でも7秒待つ
+            current_elapsed = time.time() - starttime
+            if current_elapsed < 7:
+                wait_time = 7 - current_elapsed
+                print(f"Waiting additional {wait_time:.2f} seconds before using fallback API")
+                time.sleep(wait_time)
             # 動画IDをサニタイズ（末尾の余分なコロンを除去）
             clean_videoid = videoid.rstrip(':')
             # fallback API の場合はURLに直接動画IDを付加する形（例: https://watawata8.glitch.me/api/ID）
             fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
             print(f"Invidious API failed, falling back to {fallback_full_url}")
             try:
-                # タイムアウトの読み込み時間を延長（read timeout = 3秒）
+                # タイムアウト時間の読み込み時間を延長（read timeout = 3秒）
                 r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=(3.0, 3))
                 if r.status_code == 200 and isJSON(r.text):
                     data = json.loads(r.text)
@@ -231,11 +237,12 @@ def getVideoData(videoid):
                 print(f"Error accessing fallback API {fallback_full_url}: {exc}")
                 continue
 
-    # fallback APIを使用した場合、高画質 streamは Invidious API のみから取得可能なため""を返す
+    # fallback API を使用した場合、Invidious API のみで取得可能な高画質 stream の代わりに、
+    # fallback API のレスポンスから highstreamUrl の値を利用する
     if fallback_data:
         fallback_video = {
             'video_urls': [fallback_data.get("stream_url")],
-            'highstream_url': "",
+            'highstream_url': fallback_data.get("highstreamUrl", ""),  # ここを更新
             'audio_url': fallback_data.get("audioUrl", ""),
             'description_html': "Load Failed",
             'title': "Load Failed",
