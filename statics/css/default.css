@@ -3,6 +3,24 @@ body {
   font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Helvetica,
     Arial, sans-serif;}
+ .search-container form fieldset {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+    
+    .search-container input[type="search"] {
+      width: 250px; /* 幅を大きく */
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      border-radius: 20px; /* 丸みを帯びた角 */
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    
+    .search-container input[type="search"]:focus {
+      border-color: #007bff;
+    }
  /* トップバー全体 */
     #top-bar {
       top: 0;
@@ -361,6 +379,7 @@ img.thumbnail {
   display: inline;
 }
 
+
 .searchbar .pure-form fieldset { padding: 0; }
 
 .searchbar input[type="search"] {
@@ -380,7 +399,6 @@ img.thumbnail {
 	border: 2px solid;
 	border-color: #0000 #0000 #FED #0000;
 }
-
 /* https://stackoverflow.com/a/55170420 */
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
