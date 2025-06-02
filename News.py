@@ -26,7 +26,7 @@ def scrape_yahoo_news():
     ※実際の Yahoo!ニュースの HTML 構造に合わせてセレクターを変更してください。
     """
     global news_data
-    base_url = "https://news.yahoo.co.jp"  # Yahoo!ニュースのトップページ URL の例
+    base_url = "https://news.yahoo.co.jp/pickup"  # Yahoo!ニュースのトップページ URL の例
     try:
         response = requests.get(base_url)
         response.raise_for_status()
