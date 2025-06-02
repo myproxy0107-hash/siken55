@@ -3,4 +3,6 @@ requests
 fastapi
 uvicorn
 python-multipart
-yt-dlp
+flask
+beautifulsoup4 
+apscheduler
