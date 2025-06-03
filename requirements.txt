@@ -2,7 +2,3 @@ jinja2
 requests
 fastapi
 uvicorn
-python-multipart
-flask
-beautifulsoup4 
-apscheduler
