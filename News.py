@@ -17,27 +17,28 @@ def summarize_text(text, max_length=200):
         return text
     return text[:max_length] + "..."
 
-
-def scrape_yahoo_news():
+def scrape_yahoo_news(limit=5):
     """
-    Yahoo!ニュース（例：トップページまたはピックアップページ）のトレンド記事をスクレイピングして
-    タイトルと本文の要約を抽出する関数
+    Yahoo!ニュース（例：ピックアップページ）の人気記事をスクレイピングして
+    タイトル、要約、URLを抽出する関数
 
-    ※実際の Yahoo!ニュースの HTML 構造に合わせてセレクターを変更してください。
+    ※HTML構造に合わせてセレクターを変更してください。
     """
     global news_data
-    base_url = "https://news.yahoo.co.jp/pickup"  # Yahoo!ニュースのトップページ URL の例
+    base_url = "https://news.yahoo.co.jp/pickup"  # Yahoo!ニュース ピックアップページの例
     try:
         response = requests.get(base_url)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
         
-        # 【例】ニュース一覧が格納された ul タグ（クラス名は例）
-        news_list = soup.select("ul.news-list li.news-item")
+        # ※下記セレクターはYahoo!ニュースの実際のHTMLに合わせて調整してください
+        # ここでは「ul.news-list li.news-item」内に各記事が存在する前提
+        news_items = soup.select("ul.news-list li.news-item")
         
+        # 先頭から上位 limit 件を抽出
         scraped_news = []
-        for item in news_list:
-            # タイトルと記事リンクを含む a タグを抽出（セレクターは実際に合わせる）
+        for item in news_items[:limit]:
+            # タイトルとリンクを含む a タグを抽出
             a_tag = item.find("a")
             if not a_tag:
                 continue
@@ -47,17 +48,16 @@ def scrape_yahoo_news():
             if article_url and not article_url.startswith("http"):
                 article_url = base_url + article_url
             
-            # 各記事の内容を取得（必要に応じてスクレイピング負荷やアクセス制限に注意）
+            # 各記事の内容を取得して要約（記事本文取得はサイトへの負荷に注意）
             try:
                 article_response = requests.get(article_url)
                 article_response.raise_for_status()
                 article_soup = BeautifulSoup(article_response.content, "html.parser")
-                # 【例】記事本文は複数の p タグに分かれていると仮定
+                # 例：記事本文は複数の p タグに分かれていると仮定
                 paragraphs = article_soup.find_all("p")
                 content = " ".join([p.get_text(strip=True) for p in paragraphs])
                 summary = summarize_text(content, max_length=200)
             except Exception as e:
-                # もし記事ページの取得に失敗した場合はタイトルのみの表示にする
                 summary = "記事の要約を取得できませんでした。"
             
             scraped_news.append({
@@ -66,27 +66,26 @@ def scrape_yahoo_news():
                 "url": article_url
             })
         
-        # スクレイピング結果をグローバル変数に更新
         news_data = scraped_news
-        print("Yahoo!ニュースのスクレイピングにより最新情報を更新しました。")
+        print("Yahoo!ニュースのスクレイピングにより最新情報（上位5件）を更新しました。")
     except Exception as e:
         print("Yahoo!ニュースのスクレイピング中にエラーが発生しました:", e)
 
-
 # APScheduler で 1 時間ごとにスクレイピングを実行するジョブをセットアップ
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=scrape_yahoo_news, trigger="interval", hours=1)
+scheduler.add_job(func=lambda: scrape_yahoo_news(limit=5), trigger="interval", hours=1)
 scheduler.start()
 
-# アプリ終了時にスケジューラーをクリーンアップするための登録
+# アプリ終了時にスケジューラーをクリーンアップ
 atexit.register(lambda: scheduler.shutdown())
 
-@app.route("/")
-def index():
-    # otoiawase.html テンプレートに news_data を渡して表示
+@app.route("/news")
+def news():
+    # /news にアクセスされると、最新のスクレイピング結果（上位5件）を表示する
+    # ※必要に応じて scrape_yahoo_news(limit=5) をここで呼び出してリロードしてもよい
     return render_template("news.html", news=news_data)
 
 if __name__ == "__main__":
-    # 初回実行時に一度スクレイピングを実行する
-    scrape_yahoo_news()
+    # 初回実行時にスクレイピングを実施（上位5件のみ）
+    scrape_yahoo_news(limit=5)
     app.run(debug=True)
