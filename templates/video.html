@@ -271,7 +271,8 @@
     </nav>
   </header>
 	    <br>
-	 <main class="main-content">
+	<!-- メインコンテンツ -->
+  <main class="main-content">
     <!-- トップエリア：動画プレーヤーとその右隣に関連動画 -->
     <div class="top-section">
       <!-- 左側：動画プレーヤー -->
@@ -279,11 +280,9 @@
         <div class="video-player-container">
           <div class="video-player-wrapper">
             <video id="videoPlayer" controls playsinline preload="none">
-                        <source class="player-source" src="{{ videourl }}">
-                        {% endfor %}
-                        <p id="video_info">お使いのブラウザは動画の再生に対応していません。</p>
-                    </video>
-                </div>
+              <source src="https://rr3---sn-vgqsknz6.googlevideo.com/videoplayback?..." type="video/mp4">
+              <p>このビデオを再生するには、HTML5対応ブラウザが必要です。</p>
+            </video>
           </div>
         </div>
       </div>
@@ -306,53 +305,45 @@
         {% endfor %}
       </div>
     </div>
-                <div class="pure-g">
-                    <div class="pure-u-1 pure-u-lg-1-5">
-                         <a href="{{ videourls[0] }}" download="{{ video_title }}">ダウンロード</a><br>
-                             <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a><br>
-			       <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a><br>
-			      <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質再生‼︎</a>
-                        <hr>
-                    </div>
-                    <div class="pure-u-1 pure-u-lg-3-5">
-                        <div class="h-box">
-                                <a href="/channel/{{ author_id }}" style="display: inline-block; width: fit-content; width: -moz-fit-content">
-                                    <div class="channel-profile">
 
-                                        <img src="{{ author_icon }}">
-
-                                        <span id="channel-name">{{ author }}</span>
-                                    </div>
-                                </a>
-                                <p>チャンネル登録者数: {{ subscribers_count }}人</p>
-                            <div id="description-box">
-                                <div id="descriptionWrapper">{{ description | safe}}</div>
-                            </div>
-                            <hr>
-                            <div id="comments"></div>
-                        </div>
-                    </div>
-                    <div class="pure-u-1 pure-u-lg-1-5">
-                        <label for="autonextpage">自動で次の動画に遷移<input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)"></label><br>
-                        <label for="loop">ループ再生<input id="loop" type="checkbox" onchange="changeLoop(this)"></label>
-                    
-                        {% for rec_video in recommended_videos %}
-                        <a href="/watch?v={{ rec_video['video_id'] }}">
-                            <div class="thumbnail">
-                                <img loading="lazy" class="thumbnail" src="{% if proxy == 'True' %}/thumbnail?v={{ rec_video['video_id'] }}{% else %}https://img.youtube.com/vi/{{ rec_video['video_id'] }}/0.jpg{% endif %}">
-                                <p class="length">{{ rec_video["length_text"] }}</p>
-                            </div>
-                            <p style="width:100%;">{{ rec_video["title"] }}</p>
-                        </a>
-                        <p>{{ rec_video["view_count_text"] }}回視聴</p>        
-                        <a href="/channel/{{ rec_video['authorId'] }}">{{ rec_video["author"] }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    <!-- 下部：動画説明とコメント -->
+    <div class="video-details">
+      <!-- 動画説明エリア -->
+      <div class="video-description">
+        <h2>動画説明</h2>
+        <p>
+          ここに動画の詳細な説明が入ります。内容や見どころ、出演者のコメントなどをご記入ください。
+        </p>
+      </div>
+      <!-- コメントエリア -->
+      <div class="comments-section">
+        <h3>コメント</h3>
+        <!-- コメント例 -->
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">@ユーザー1</span>
+            <span class="comment-time">7 years ago</span>
+          </div>
+          <p>素晴らしいパフォーマンスでした！</p>
+          <div class="comment-actions">
+            <span><i class="fas fa-thumbs-up"></i> 12000</span>
+            <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 35 件の返信</span>
+          </div>
         </div>
-        <div class="pure-u-1 pure-u-md-2-24"></div>
-        
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">@ユーザー2</span>
+            <span class="comment-time">7 years ago</span>
+          </div>
+          <p>本当に感動しました！</p>
+          <div class="comment-actions">
+            <span><i class="fas fa-thumbs-up"></i> 4900</span>
+            <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 20 件の返信</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
         <script>
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "/comments?v=" + getQueryValue('v'));
