@@ -18,25 +18,25 @@
         <script src="/js/utils/utils.js"></script>
 	      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
  
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>YouTube風｜動画＋関連動画 横並び</title>
   <style>
-    /* もともと使用していたCSS */
+    /* グローバル変数 */
     :root {
       --yt-spec-base-background: #ffffff;
       --yt-spec-raised-background: #ffffff;
-      --yt-spec-menu-background: #ffffff;
-      --yt-spec-inverted-background: #0f0f0f;
-      --yt-spec-outline: rgba(0, 0, 0, 0.1);
       --yt-spec-text-primary: #0f0f0f;
       --yt-spec-text-secondary: #606060;
       --yt-spec-red: #ff0000;
+      --yt-spec-outline: rgba(0, 0, 0, 0.1);
       --yt-spec-brand-button-text: #065fd4;
     }
+
+    /* 全体基本スタイル */
     body {
       font-family: Roboto, Arial, sans-serif;
       background-color: var(--yt-spec-base-background);
@@ -45,6 +45,7 @@
       padding: 0;
       line-height: 1.4;
     }
+
     /* ヘッダー */
     .youtube-header {
       position: fixed;
@@ -77,7 +78,6 @@
       font-weight: 500;
       letter-spacing: -0.5px;
     }
-    /* YouTubeライクな検索バー */
     .youtube-search {
       display: flex;
       flex: 1;
@@ -97,11 +97,11 @@
       padding: 0 16px;
       font-size: 16px;
       outline: none;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
     .search-input:focus {
       border-color: var(--yt-spec-brand-button-text);
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
     }
     .search-button {
       width: 64px;
@@ -117,83 +117,55 @@
       background-color: #f0f0f0;
     }
     .header-actions {
-      display: flex;
-      align-items: center;
       margin-left: 16px;
     }
-    .shorts-link {
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      text-decoration: none;
-      color: var(--yt-spec-text-primary);
-      border-radius: 18px;
-      transition: background-color 0.1s;
-    }
-    .shorts-link:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-      color: var(--yt-spec-text-primary);
-    }
-    .shorts-link i {
-      margin-right: 6px;
-      font-size: 16px;
-    }
-    .shorts-link span {
-      font-size: 14px;
-      font-weight: 500;
-    }
-    @media (max-width: 768px) {
-      .shorts-link span {
-        display: none;
-      }
-    }
-    /* メインコンテンツ（もともとあった部分） */
+
+    /* メインコンテンツ */
     .main-content {
-      margin-top: 56px;
-      min-height: calc(100vh - 56px);
+      margin-top: 56px; /* ヘッダー分 */
       padding: 16px;
     }
-    /* 以下、レイアウト改変用の追加スタイル */
-    .video-container {
+    
+    /* トップエリア：動画プレーヤーと関連動画を横並びに配置 */
+    .top-section {
       display: flex;
       gap: 16px;
+      align-items: flex-start;  /* 各カラムの上端を揃える */
+      margin-bottom: 16px;
     }
-    /* 左カラム：動画プレーヤー、説明、コメントを含む */
-    .video-left {
+    .video-column {
       flex: 0 0 75%;
-      display: flex;
-      flex-direction: column;
     }
-    /* 右カラム：関連動画（動画の上端が動画プレーヤーの上端と揃う） */
-    .video-right {
+    .related-column {
       flex: 0 0 25%;
     }
-    /* 動画プレーヤー。もともとの.video-player-wrapperを流用 */
+    
+    /* 動画プレーヤー */
     .video-player-container {
       width: 100%;
     }
     .video-player-wrapper video {
       width: 100%;
-      /* 横幅に応じた16:9比率 */
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 16/9; /* 横幅に合わせた16:9比率 */
       background: #000;
     }
-    /* 動画の説明は、動画の真下に配置 */
-    .video-description {
+
+    /* 動画詳細（動画説明＋コメント）エリア */
+    .video-details {
       margin-top: 16px;
+      text-align: left;
+    }
+    .video-description {
+      margin-bottom: 16px;
       background-color: #f9f9f9;
       padding: 12px;
       border-radius: 4px;
-      text-align: left;
     }
-    /* コメントエリア */
     .comments-section {
-      margin-top: 16px;
       background-color: #ffffff;
       padding: 12px;
       border: 1px solid var(--yt-spec-outline);
       border-radius: 4px;
-      text-align: left;
     }
     .comments-section h3 {
       margin-top: 0;
@@ -219,7 +191,13 @@
       font-size: 12px;
       color: var(--yt-spec-text-secondary);
     }
-    /* 関連動画の表示 */
+
+    /* 関連動画（右カラム） */
+    .related-column h3 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
     .recommendation {
       margin-bottom: 16px;
     }
@@ -254,38 +232,15 @@
       margin: 4px 0 0;
       font-size: 14px;
     }
-	   }
-    /* ここから改変部分：動画と関連動画の横並びレイアウト */
-    .video-container {
-      display: flex;
-      gap: 16px;
-    }
-    /* 左カラム：動画プレーヤー、説明、コメント */
-    .video-left {
-      flex: 0 0 75%;
-      display: flex;
-      flex-direction: column;
-    }
-    /* 右カラム：関連動画のみ（写真のみ） */
-    .video-right {
-      flex: 0 0 30%;  /* 幅を30%に拡大 */
-    }
-    /* 動画プレーヤー */
-    .video-player-container {
-      width: 100%;
-    }
-    .video-player-wrapper video {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-    }
-    /* レスポンシブ対応 */
+    
+    /* レスポンシブ対応：画面幅が狭い場合は縦並びに */
     @media (max-width: 768px) {
-      .video-container {
-        display: block;
+      .top-section {
+        flex-direction: column;
       }
-      .video-right {
-        margin-top: 16px;
+      .video-column, .related-column {
+        flex: 0 0 auto;
+        width: 100%;
       }
     }
   </style>
@@ -293,8 +248,7 @@
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <!-- ヘッダー部分 -->
-  <header id="top-bar">
+   <header id="top-bar">
     <div class="navbar-logo">
       <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
     </div>
@@ -317,43 +271,25 @@
     </nav>
   </header>
 	    <br>
-	<div class="no-theme">
-
-  <!-- メインコンテンツ -->
+	<!-- メインコンテンツ -->
   <main class="main-content">
-    <div class="video-container">
-      <!-- 左カラム：動画プレーヤーとその下に動画説明、コメント -->
-      <div class="video-left">
+    <!-- トップエリア：動画プレーヤーとその右隣に関連動画 -->
+    <div class="top-section">
+      <!-- 左側：動画プレーヤー -->
+      <div class="video-column">
         <div class="video-player-container">
           <div class="video-player-wrapper">
             <video id="videoPlayer" controls playsinline preload="none">
-              {% for videourl in videourls%}
-                        <source class="player-source" src="{{ videourl }}">
-                        {% endfor %}
+              <source src="https://rr3---sn-vgqsknz6.googlevideo.com/videoplayback?..." type="video/mp4">
+              <p>このビデオを再生するには、HTML5対応ブラウザが必要です。</p>
             </video>
           </div>
         </div>
-        <!-- 動画の説明を動画の真下に配置 -->
-        <div class="video-description" id="descriptionText">
-	<h1>{{ video_title }}</h1>
-                    <p style="display: inline-block; margin-right: 10px; vertical-align: super;">{{ view_count }}回視聴</p>
-                    <div style="display: inline-block;"><span class="material-symbols-outlined" style="display: inline-block; padding-right: 5px;">thumb_up</span><p style="display: inline-block; vertical-align: super; ">{{ like_count }}</p></div>
-
-                    <p id="player_current_time" style="display: inline-block; margin-left: 10px; vertical-align: super;"></p>
-                    <p style="display: inline-block; vertical-align: super;">/ {{ length_text }}</p>
-                </div><br>
-          {{ description | safe }}
-        </div>
-	      
-        <!-- コメントエリア -->
-        <div class="comments-section">
-          <h3>コメント</h3>
-                            <div id="comments"></div>
-        </div>
       </div>
-      <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
-      <div class="video-right">
+      <!-- 右側：関連動画。上端が動画プレーヤーの上端と揃います。 -->
+      <div class="related-column">
         <h3>関連動画</h3>
+        <!-- 以下、テンプレートタグでループする例 -->
         {% for rec_video in recommended_videos %}
         <div class="recommendation">
           <a href="/watch?v={{ rec_video['video_id'] }}">
@@ -367,6 +303,44 @@
           <a href="/channel/{{ rec_video['authorId'] }}">{{ rec_video["author"] }}</a>
         </div>
         {% endfor %}
+      </div>
+    </div>
+
+    <!-- 下部：動画説明とコメント -->
+    <div class="video-details">
+      <!-- 動画説明エリア -->
+      <div class="video-description">
+        <h2>動画説明</h2>
+        <p>
+          ここに動画の詳細な説明が入ります。内容や見どころ、出演者のコメントなどをご記入ください。
+        </p>
+      </div>
+      <!-- コメントエリア -->
+      <div class="comments-section">
+        <h3>コメント</h3>
+        <!-- コメント例 -->
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">@ユーザー1</span>
+            <span class="comment-time">7 years ago</span>
+          </div>
+          <p>素晴らしいパフォーマンスでした！</p>
+          <div class="comment-actions">
+            <span><i class="fas fa-thumbs-up"></i> 12000</span>
+            <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 35 件の返信</span>
+          </div>
+        </div>
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">@ユーザー2</span>
+            <span class="comment-time">7 years ago</span>
+          </div>
+          <p>本当に感動しました！</p>
+          <div class="comment-actions">
+            <span><i class="fas fa-thumbs-up"></i> 4900</span>
+            <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 20 件の返信</span>
+          </div>
+        </div>
       </div>
     </div>
   </main>
