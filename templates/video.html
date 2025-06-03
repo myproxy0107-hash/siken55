@@ -335,6 +335,16 @@
       </div>
       <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
       <div class="video-right">
+	       <div class="pure-u-1 pure-u-lg-1-5">
+                         <a href="{{ videourls[0] }}" download="{{ video_title }}">ダウンロード</a><br>
+                             <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a><br>
+			       <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a><br>
+			      <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質再生‼︎</a>
+		        <div class="pure-u-1 pure-u-lg-1-5">
+                        <label for="autonextpage">自動で次の動画に遷移<input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)"></label><br>
+                        <label for="loop">ループ再生<input id="loop" type="checkbox" onchange="changeLoop(this)"></label>
+                    
+                        <hr>
         <h3>関連動画</h3>
         {% for rec_video in recommended_videos %}
         <div class="recommendation">
