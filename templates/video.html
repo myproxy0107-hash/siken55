@@ -311,30 +311,22 @@
   </header>
 	    <br>
 	<div class="no-theme">
-	<!-- メインコンテンツ -->
+
+  <!-- メインコンテンツ -->
   <main class="main-content">
-    <!-- トップエリア：動画プレーヤーとその右隣に関連動画 -->
-    <div class="top-section">
-      <!-- 左側：動画プレーヤー -->
-      <div class="video-column">
+    <div class="video-container">
+      <!-- 左カラム：動画プレーヤーとその下に動画説明、コメント -->
+      <div class="video-left">
         <div class="video-player-container">
           <div class="video-player-wrapper">
             <video id="videoPlayer" controls playsinline preload="none">
-                {% for videourl in videourls%}
-                        <source class="player-source" src="{{ videourl }}">
-                        {% endfor %}
-                        <p id="video_info">お使いのブラウザは動画の再生に対応していません。</p>
-                    </video>
-      </div>
-	     <!-- 動画の説明を動画の真下に配置 -->
+              <source src="{{ videourl }}" type="video/mp4">
+              <p>このビデオを再生するには、HTML5対応ブラウザが必要です。</p>
+            </video>
+          </div>
+        </div>
+        <!-- 動画の説明を動画の真下に配置 -->
         <div class="video-description" id="descriptionText">
-	<h1>{{ video_title }}</h1>
-                    <p style="display: inline-block; margin-right: 10px; vertical-align: super;">{{ view_count }}回視聴</p>
-                    <div style="display: inline-block;"><span class="material-symbols-outlined" style="display: inline-block; padding-right: 5px;">thumb_up</span><p style="display: inline-block; vertical-align: super; ">{{ like_count }}</p></div>
-
-                    <p id="player_current_time" style="display: inline-block; margin-left: 10px; vertical-align: super;"></p>
-                    <p style="display: inline-block; vertical-align: super;">/ {{ length_text }}</p>
-                <br>
           {{ description | safe }}
         </div>
 	      
@@ -342,13 +334,11 @@
         <div class="comments-section">
           <h3>コメント</h3>
                             <div id="comments"></div>
-        </div>   
-		 </div>
         </div>
-      <!-- 右側：関連動画。上端が動画プレーヤーの上端と揃います。 -->
-      <div class="related-column">
+      </div>
+      <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
+      <div class="video-right">
         <h3>関連動画</h3>
-        <!-- 以下、テンプレートタグでループする例 -->
         {% for rec_video in recommended_videos %}
         <div class="recommendation">
           <a href="/watch?v={{ rec_video['video_id'] }}">
@@ -364,10 +354,8 @@
         {% endfor %}
       </div>
     </div>
-
-      </div>
-    </div>
   </main>
+        
         <script>
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "/comments?v=" + getQueryValue('v'));
