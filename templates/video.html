@@ -254,6 +254,31 @@
       margin: 4px 0 0;
       font-size: 14px;
     }
+	   }
+    /* ここから改変部分：動画と関連動画の横並びレイアウト */
+    .video-container {
+      display: flex;
+      gap: 16px;
+    }
+    /* 左カラム：動画プレーヤー、説明、コメント */
+    .video-left {
+      flex: 0 0 75%;
+      display: flex;
+      flex-direction: column;
+    }
+    /* 右カラム：関連動画のみ（写真のみ） */
+    .video-right {
+      flex: 0 0 30%;  /* 幅を30%に拡大 */
+    }
+    /* 動画プレーヤー */
+    .video-player-container {
+      width: 100%;
+    }
+    .video-player-wrapper video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
     /* レスポンシブ対応 */
     @media (max-width: 768px) {
       .video-container {
@@ -308,29 +333,7 @@
         <!-- コメントエリア -->
         <div class="comments-section">
           <h3>コメント</h3>
-          <!-- コメント例 -->
-          <div class="comment-item">
-            <div class="comment-header">
-              <span class="comment-author">@かんり-m2g</span>
-              <span class="comment-time">7 years ago</span>
-            </div>
-            <p>メガテラさんは流行ってるから歌うんじゃなくて、自分が好きな曲を歌うからハズレがないし全部が完璧なんだと思う</p>
-            <div class="comment-actions">
-              <span><i class="fas fa-thumbs-up"></i> 12000</span>
-              <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 35 件の返信</span>
-            </div>
-          </div>
-          <div class="comment-item">
-            <div class="comment-header">
-              <span class="comment-author">@わかみ-k2d</span>
-              <span class="comment-time">7 years ago</span>
-            </div>
-            <p>3:45のハー↑ハハハイェー↓がめっちゃ好き</p>
-            <div class="comment-actions">
-              <span><i class="fas fa-thumbs-up"></i> 4900</span>
-              <span style="margin-left: 8px;"><i class="fas fa-reply"></i> 20 件の返信</span>
-            </div>
-          </div>
+                            <div id="comments"></div>
         </div>
       </div>
       <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
