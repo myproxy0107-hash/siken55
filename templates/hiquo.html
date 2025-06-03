@@ -234,6 +234,9 @@
 	&emsp;
     </nav>
   </header>
+	   <audio id="audio" controls>
+           <source src= "{{ videourls[0] }}" type="audio/mp3">
+ </audio>
 	<div class="no-theme">
 <main class="main-content">
     <div class="video-container">
@@ -249,9 +252,6 @@
               <p id="video_info">お使いのブラウザは動画の再生に対応していません。</p>
 	  </div>
         </div>
-	      <audio id="audio" controls>
-           <source src= "{{ videourls[0] }}" type="audio/mp3">
- </audio>
         <!-- 動画の説明を動画の真下に配置 -->
         <div class="video-description" id="descriptionText">
 			<h1>{{ video_title }}</h1>
@@ -266,8 +266,6 @@
                             <div id="comments"></div>
         </div>
       </div>
-	    </div>
-	      </div>
       <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
       <div class="video-right">
         <h3>関連動画</h3>
