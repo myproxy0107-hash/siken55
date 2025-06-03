@@ -166,7 +166,7 @@
     }
     /* 右カラム：関連動画（動画の上端が動画プレーヤーの上端と揃う） */
     .video-right {
-      flex: 0 0 25%;
+      flex: 0 0 35%;
     }
     /* 動画プレーヤー。もともとの.video-player-wrapperを流用 */
     .video-player-container {
@@ -265,19 +265,6 @@
       flex: 0 0 75%;
       display: flex;
       flex-direction: column;
-    }
-    /* 右カラム：関連動画のみ（写真のみ） */
-    .video-right {
-      flex: 0 0 30%;  /* 幅を30%に拡大 */
-    }
-    /* 動画プレーヤー */
-    .video-player-container {
-      width: 100%;
-    }
-    .video-player-wrapper video {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
     }
     /* レスポンシブ対応 */
     @media (max-width: 768px) {
