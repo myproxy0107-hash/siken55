@@ -223,12 +223,16 @@
         <div class="video-player-container">
           <div class="video-player-wrapper">
             <video id="videoPlayer" controls playsinline preload="none">
+		     <video id="player" class="on-video_player video-js player-style-invidious" loadedmetadata="settime()" controls="" playsinline="" loop="" 
+              style="outline:none;width:100%;background-color:#000;" 
+              poster="{% if proxy == 'True' %}/thumbnail?v={{ videoid }}{% else %}https://img.youtube.com/vi/{{ videoid }}/0.jpg{% endif %}">
               {% for videourl in videourls%}
                         <source class="player-source" src="{{ videourl }}">
                         {% endfor %}
             </video>
           </div>
         </div>
+	         </div>
         <!-- 動画の説明を動画の真下に配置 -->
         <div class="video-description" id="descriptionText">
 			<h1>{{ video_title }}</h1>
