@@ -34,11 +34,187 @@
       });
     });
   </script>
+	    <style>
+   /* もともと使用していたCSS */
+    :root {
+      --yt-spec-base-background: #ffffff;
+      --yt-spec-raised-background: #ffffff;
+      --yt-spec-menu-background: #ffffff;
+      --yt-spec-inverted-background: #0f0f0f;
+      --yt-spec-outline: rgba(0, 0, 0, 0.1);
+      --yt-spec-text-primary: #0f0f0f;
+      --yt-spec-text-secondary: #606060;
+      --yt-spec-red: #ff0000;
+      --yt-spec-brand-button-text: #065fd4;
+    }
+    body {
+      font-family: Roboto, Arial, sans-serif;
+      background-color: var(--yt-spec-base-background);
+      color: var(--yt-spec-text-primary);
+      margin: 0;
+      padding: 0;
+      line-height: 1.4;
+    }
+   
+    @media (max-width: 768px) {
+      .shorts-link span {
+        display: none;
+      }
+    }
+    /* メインコンテンツ（もともとあった部分） */
+    .main-content {
+      margin-top: 56px;
+      min-height: calc(100vh - 56px);
+      padding: 16px;
+    }
+    /* 以下、レイアウト改変用の追加スタイル */
+    .video-container {
+      display: flex;
+      gap: 16px;
+    }
+    /* 左カラム：動画プレーヤー、説明、コメントを含む */
+    .video-left {
+      flex: 0 0 75%;
+      display: flex;
+      flex-direction: column;
+    }
+    /* 右カラム：関連動画（動画の上端が動画プレーヤーの上端と揃う） */
+    .video-right {
+      flex: 0 0 25%;
+    }
+    /* 動画プレーヤー。もともとの.video-player-wrapperを流用 */
+    .video-player-container {
+      width: 100%;
+    }
+    .video-player-wrapper video {
+      width: 100%;
+      /* 横幅に応じた16:9比率 */
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+    /* 動画の説明は、動画の真下に配置 */
+    .video-description {
+      margin-top: 16px;
+      background-color: #f9f9f9;
+      padding: 12px;
+      border-radius: 4px;
+      text-align: left;
+    }
+    /* コメントエリア */
+    .comments-section {
+      margin-top: 16px;
+      background-color: #ffffff;
+      padding: 12px;
+      border: 1px solid var(--yt-spec-outline);
+      border-radius: 4px;
+      text-align: left;
+    }
+    .comments-section h3 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .comment-item {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--yt-spec-outline);
+    }
+    .comment-item:last-child {
+      border-bottom: none;
+    }
+    .comment-header {
+      margin-bottom: 4px;
+    }
+    .comment-author {
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .comment-actions {
+      font-size: 12px;
+      color: var(--yt-spec-text-secondary);
+    }
+    /* 関連動画の表示 */
+    .recommendation {
+      margin-bottom: 8px;
+    }
+    .recommendation a {
+      text-decoration: none;
+      color: var(--yt-spec-text-primary);
+      display: block;
+    }
+    .thumbnail {
+      position: relative;
+      width: 100%;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .thumbnail img {
+      width: 100%;
+      display: block;
+    }
+    .length {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .recommendation p {
+      margin: 4px 0 0;
+      font-size: 14px;
+    }
+	   }
+    /* ここから改変部分：動画と関連動画の横並びレイアウト */
+    .video-container {
+      display: flex;
+      gap: 16px;
+    }
+    /* 左カラム：動画プレーヤー、説明、コメント */
+    .video-left {
+      flex: 0 0 75%;
+      display: flex;
+      flex-direction: column;
+    }
+    /* 右カラム：関連動画のみ（写真のみ） */
+    .video-right {
+      flex: 0 0 30%;  /* 幅を30%に拡大 */
+    }
+    /* 動画プレーヤー */
+    .video-player-container {
+      width: 100%;
+    }
+    .video-player-wrapper video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .video-container {
+        display: block;
+      }
+      .video-right {
+        margin-top: 16px;
+      }
+    }
+  </style>
     </head>
     <body>
        <header id="top-bar">
     <div class="navbar-logo">
       <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
+    </div>
+		 <div class="search-container">
+      <form class="pure-form" action="/search" method="get">
+        <fieldset>
+          <input id="searchbox" name="q" type="search" placeholder="検索" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false">
+        </fieldset>
+      </form>
     </div>
     <!-- モバイル用ハンバーガーアイコン -->
     <div id="hamburger">&#9776;</div>
@@ -51,78 +227,53 @@
 	&emsp;
     </nav>
   </header>
-	    <br>
-	    <div  class="no-theme">
-        <span id="dark_mode_pref" style="display:none"></span>
-        <div class="pure-g">
-            <div class="pure-u-1 pure-u-md-2-24"></div>
-            <div id="contents" class="pure-u-1 pure-u-md-20-24">
-                <div class="pure-g navbar h-box">
-                    <div class="pure-u-1 pure-u-md-12-24 searchbar">
-                        <form class="pure-form" action="/search" method="get">
-                            <fieldset>
-                                <input id="searchbox" name="q" type="search" placeholder="検索" value="" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false" >
-                            </fieldset>
-                        </form>
-                    </div>
-                </div>
-                <div class="umev">
+	<div class="no-theme">
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="video-container">
+      <!-- 左カラム：動画プレーヤーとその下に動画説明、コメント -->
+      <div class="video-left">
+        <div class="video-player-container">
+          <div class="video-player-wrapper">
+            <div class="umev">
                    <iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed/{{ videoid }}" title="video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 </div>
-                <div class="h-box">
-                    <h1>{{ video_title }}</h1>
+          </div>
+        </div>
+        <!-- 動画の説明を動画の真下に配置 -->
+        <div class="video-description" id="descriptionText">
+			<h1>{{ video_title }}</h1>
                     <p style="display: inline-block; margin-right: 10px; vertical-align: super;">{{ view_count }}回視聴</p>
                     <div style="display: inline-block;"><span class="material-symbols-outlined" style="display: inline-block; padding-right: 5px;">thumb_up</span><p style="display: inline-block; vertical-align: super; ">{{ like_count }}</p></div>
-
-                    <p id="player_current_time" style="display: inline-block; margin-left: 10px; vertical-align: super;"></p>
-                    <p style="display: inline-block; vertical-align: super;">/ {{ length_text }}</p>
-                </div><br>
-                <div class="pure-g">
-                    <div class="pure-u-1 pure-u-lg-1-5">
-                        <a href="{{ videourls[0] }}" download="{{ video_title }}">ダウンロード</a><br>
-                             <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a><br>
-			       <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a><br>
-			      <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質再生‼︎</a>
-
-                        <hr>
-                    </div>
-                    <div class="pure-u-1 pure-u-lg-3-5">
-                        <div class="h-box">
-                                <a href="/channel/{{ author_id }}" style="display: inline-block; width: fit-content; width: -moz-fit-content">
-                                    <div class="channel-profile">
-
-                                        <img src="{{ author_icon }}">
-
-                                        <span id="channel-name">{{ author }}</span>
-                                    </div>
-                                </a>
-                                <p>チャンネル登録者数: {{ subscribers_count }}人</p>
-                            <div id="description-box">
-                                <div id="descriptionWrapper">{{ description | safe}}</div>
-                            </div>
-                            <hr>
-                            <div id="comments"></div>
-                        </div>
-                    </div>
-                    <div class="pure-u-1 pure-u-lg-1-5">
-
-                    
-                        {% for rec_video in recommended_videos %}
-                        <a href="/ume?v={{ rec_video['video_id'] }}">
-                            <div class="thumbnail">
-                                <img loading="lazy" class="thumbnail" src="{% if proxy == 'True' %}/thumbnail?v={{ rec_video['video_id'] }}{% else %}https://img.youtube.com/vi/{{ rec_video['video_id'] }}/0.jpg{% endif %}">
-                                <p class="length">{{ rec_video["length_text"] }}</p>
-                            </div>
-                            <p style="width:100%;">{{ rec_video["title"] }}</p>
-                        </a>
-                        <p>{{ rec_video["view_count_text"] }}回視聴</p>        
-                        <a href="/channel/{{ rec_video['authorId'] }}">{{ rec_video["author"] }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+          {{ description | safe }}
         </div>
-        <div class="pure-u-1 pure-u-md-2-24"></div>
+	      
+        <!-- コメントエリア -->
+        <div class="comments-section">
+          <h3>コメント</h3>
+                            <div id="comments"></div>
+        </div>
+      </div>
+      <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
+      <div class="video-right">
+        <h3>関連動画</h3>
+        {% for rec_video in recommended_videos %}
+        <div class="recommendation">
+          <a href="/watch?v={{ rec_video['video_id'] }}">
+            <div class="thumbnail">
+              <img loading="lazy" src="{% if proxy == 'True' %}/thumbnail?v={{ rec_video['video_id'] }}{% else %}https://img.youtube.com/vi/{{ rec_video['video_id'] }}/0.jpg{% endif %}" alt="{{ rec_video['title'] }}">
+              <span class="length">{{ rec_video["length_text"] }}</span>
+            </div>
+            <p>{{ rec_video["title"] }}</p>
+          </a>
+          <p>{{ rec_video["view_count_text"] }}回視聴</p>
+          <a href="/channel/{{ rec_video['authorId'] }}">{{ rec_video["author"] }}</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
         
         <script>
             const xhr = new XMLHttpRequest();
