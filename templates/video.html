@@ -294,24 +294,30 @@
 </head>
 <body>
   <!-- ヘッダー部分 -->
-  <header class="youtube-header">
-    <a href="#" class="youtube-logo">
-      <i class="fab fa-youtube"></i>
-      <span>YouTube風サイト</span>
-    </a>
-    <div class="youtube-search">
-      <div class="search-container">
-        <input type="text" class="search-input" placeholder="検索">
-        <button class="search-button"><i class="fas fa-search"></i></button>
-      </div>
+  <header id="top-bar">
+    <div class="navbar-logo">
+      <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
     </div>
-    <div class="header-actions">
-      <a href="#" class="shorts-link">
-        <i class="fas fa-bolt"></i>
-        <span>Shorts</span>
-      </a>
+		 <div class="search-container">
+      <form class="pure-form" action="/search" method="get">
+        <fieldset>
+          <input id="searchbox" name="q" type="search" placeholder="検索" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false">
+        </fieldset>
+      </form>
     </div>
+    <!-- モバイル用ハンバーガーアイコン -->
+    <div id="hamburger">&#9776;</div>
+    <!-- ナビゲーション -->
+    <nav id="top-nav">
+      <a href="/bbs">掲示板</a>
+      <a href="/proxypage">Proxy</a>
+      <a href="/others">その他</a>
+      <a href="/sitsumon">回答よろ</a>
+	&emsp;
+    </nav>
   </header>
+	    <br>
+	<div class="no-theme">
 
   <!-- メインコンテンツ -->
   <main class="main-content">
@@ -330,15 +336,7 @@
         <div class="video-description" id="descriptionText">
           {{ description | safe }}
         </div>
-        <!-- コメントエリア -->
-        <div class="comments-section">
-          <h3>コメント</h3>
-                            <div id="comments"></div>
-        </div>
-      </div>
-      <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
-      <div class="video-right">
-	       <div class="pure-u-1 pure-u-lg-1-5">
+	      <div class="pure-u-1 pure-u-lg-1-5">
                          <a href="{{ videourls[0] }}" download="{{ video_title }}">ダウンロード</a><br>
                              <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a><br>
 			       <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a><br>
@@ -348,6 +346,14 @@
                         <label for="loop">ループ再生<input id="loop" type="checkbox" onchange="changeLoop(this)"></label>
                     
                         <hr>
+        <!-- コメントエリア -->
+        <div class="comments-section">
+          <h3>コメント</h3>
+                            <div id="comments"></div>
+        </div>
+      </div>
+      <!-- 右カラム：関連動画。上端は動画プレーヤーの上端と揃う -->
+      <div class="video-right">
         <h3>関連動画</h3>
         {% for rec_video in recommended_videos %}
         <div class="recommendation">
