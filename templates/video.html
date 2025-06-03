@@ -232,10 +232,8 @@
               {% for videourl in videourls%}
                         <source class="player-source" src="{{ videourl }}">
                         {% endfor %}
-            </video>
-          </div>
+	  </div>
         </div>
-	         </div>
         <!-- 動画の説明を動画の真下に配置 -->
         <div class="video-description" id="descriptionText">
 			<h1>{{ video_title }}</h1>
@@ -269,7 +267,6 @@
       </div>
     </div>
   </main>
-        
         <script>
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "/comments?v=" + getQueryValue('v'));
