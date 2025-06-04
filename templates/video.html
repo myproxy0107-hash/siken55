@@ -161,7 +161,7 @@
       #sidebar {
         position: fixed;
         top: 0;
-        left: -100%; /* 初期は非表示 */
+        left: -100%;
         width: 80%;
         max-width: 300px;
         height: 100%;
@@ -215,8 +215,8 @@
           </fieldset>
         </form>
       </div>
-      <!-- モバイル用ハンバーガーアイコン -->
-      <div id="hamburger">&#9776;</div>
+      <!-- モバイル用ハンバーガーアイコン（ID変更：menuToggle） -->
+      <div id="menuToggle">&#9776;</div>
       <!-- ナビゲーション -->
       <nav id="top-nav">
         <a href="/bbs">掲示板</a>
@@ -227,14 +227,13 @@
       </nav>
     </header>
 
-    <!-- サイドバー（ハンバーガークリックで表示） -->
+    <!-- サイドバー -->
     <div id="sidebar">
       <button id="close-sidebar">×</button>
       <div class="sidebar-content">
         <a href="{{ videourl }}" download="{{ video_title }}">ダウンロード</a>
         <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a>
-        <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込みで視聴する</a>
-	<a href="javascript:location.replace('/w?v={{ videoid }}')">高画質で視聴する</a>
+        <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a>
         <div class="pure-u-1 pure-u-lg-1-5">
           <label for="autonextpage">
             自動で次の動画に遷移
@@ -301,8 +300,8 @@
     </div>
 
     <script>
-      // ハンバーガーアイコンでサイドバーの表示・非表示を切り替え
-      document.getElementById('hamburger').addEventListener('click', function() {
+      // ハンバーガーアイコン（ID: menuToggle）でサイドバーの表示・非表示を切り替え
+      document.getElementById('menuToggle').addEventListener('click', function() {
           document.getElementById('sidebar').classList.add('active');
       });
       // サイドバー内の閉じるボタンでサイドバーを閉じる
