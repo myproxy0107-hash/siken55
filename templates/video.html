@@ -228,10 +228,8 @@
         <div class="video-player-container">
           <div class="video-player-wrapper">
             <video id="videoPlayer" controls playsinline preload="none">
-		     
-              {% for videourl in videourls%}
                         <source class="player-source" src="{{ videourl }}">
-                        {% endfor %}
+	    </video>
 	  </div>
         </div>
         <!-- 動画の説明を動画の真下に配置 -->
