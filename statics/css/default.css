@@ -98,18 +98,6 @@ body {
       padding: 10px 15px;
       background-color: rgba(249, 249, 249, 0.95);
     }
-    
-    /* --- モバイル用スタイル --- */
-    /* ハンバーガーアイコン（初期は非表示） */
-    #hamburger {
-      display: none;
-      font-size: 28px;
-      cursor: pointer;
-    }
-    @media (max-width: 768px) {
-      #hamburger {
-        display: block;
-      }
       #top-nav {
         position: fixed;
         top: 65px;
