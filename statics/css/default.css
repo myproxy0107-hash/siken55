@@ -118,6 +118,17 @@ body {
         margin: 10px 0;
         margin-left: 0;
       }
+    /* --- モバイル用スタイル --- */
+    /* ハンバーガーアイコン（初期は非表示） */
+    #hamburger {
+      display: none;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      #hamburger {
+        display: block;
+      }
     }
     
     /* ダミーコンテンツ用 */
