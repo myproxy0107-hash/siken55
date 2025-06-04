@@ -98,6 +98,18 @@ body {
       padding: 10px 15px;
       background-color: rgba(249, 249, 249, 0.95);
     }
+    
+    /* --- モバイル用スタイル --- */
+    /* ハンバーガーアイコン（初期は非表示） */
+    #hamburger {
+      display: none;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      #hamburger {
+        display: block;
+      }
       #top-nav {
         position: fixed;
         top: 65px;
@@ -117,17 +129,6 @@ body {
       #top-nav a {
         margin: 10px 0;
         margin-left: 0;
-      }
-    /* --- モバイル用スタイル --- */
-    /* ハンバーガーアイコン（初期は非表示） */
-    #hamburger {
-      display: none;
-      font-size: 28px;
-      cursor: pointer;
-    }
-    @media (max-width: 768px) {
-      #hamburger {
-        display: block;
       }
     }
     
@@ -259,7 +260,7 @@ body a.pure-button-primary:hover {
 }
 
 div.thumbnail {
-  padding: 26.125%;
+  padding: 5%;
   position: relative;
   box-sizing: border-box;
 }
