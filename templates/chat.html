@@ -329,6 +329,7 @@
     </nav>
   </header>
   
+  
   <!-- サインアップ／ログイン用 -->
   <div id="user-auth">
     <div id="signup">
@@ -350,6 +351,7 @@
   <!-- チャット用エリア -->
   <div id="chat-section" style="display:none;">
     <h2>yuki-youtube<sup>+</sup>chatsite</h2>
+    <div id="current-topic" style="text-align: center; font-size: 18px; color: white; background-color: #333; padding: 5px; border-radius: 4px; margin-top: 5px; display: none;"></div>
 　　　　<div id="featured-news"></div>
     
     <div id="chat-box"></div>
@@ -452,6 +454,9 @@
       serverTimestamp,
       onValue
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import {
+      currentTopic
+    }
     
     
     // Firebase 設定
@@ -562,6 +567,18 @@ function extractVideoId(url) {
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
+// Realtime Database の "currentTopic" を監視
+const currentTopicRef = dbRef(dbRT, "currentTopic");
+onValue(currentTopicRef, (snapshot) => {
+  const topic = snapshot.val();
+  const topicElem = document.getElementById("current-topic");
+  if (topic) {
+    topicElem.textContent = topic;
+    topicElem.style.display = "block";
+  } else {
+    topicElem.style.display = "none";
+  }
+});
     
     signupButton.addEventListener("click", async () => {
       const name = document.getElementById("signupName").value;
@@ -597,7 +614,7 @@ function extractVideoId(url) {
         alert("ログインエラー: " + error.message);
       }
     });
-    
+
     function setupPresence(user) {
       const userStatusRef = ref(dbRT, "status/" + user.uid);
       const connectedRef = ref(dbRT, ".info/connected");
@@ -953,24 +970,30 @@ if (messageText.startsWith("/you ")) {
       
       
       // ★ /topic コマンド ★
-      // 「ねむい」専用。入力例： /topic 今日のチャレンジ！
-      if (messageText.startsWith("/topic ")) {
-        if (userBaseName.split("#")[0] !== "ねむい") {
-          alert("この操作は権限がありません。");
-          return;
-        }
-        const topicText = messageText.substring("/topic ".length).trim();
-        if (topicText === "") {
-          alert("話題を入力してください。");
-          return;
-        }
-        const topicDiv = document.getElementById("chat-topic");
-        topicDiv.textContent = topicText;
-        topicDiv.style.display = "block";
-        alert("話題が更新されました！");
-        messageInput.value = "";
-        return;
-      }
+if (messageText.startsWith("/topic ")) {
+  if (userBaseName.split("#")[0] !== "ねむい") {
+    alert("この操作は権限がありません。");
+    return;
+  }
+  const topicText = messageText.substring("/topic ".length).trim();
+  if (topicText === "") {
+    alert("話題を入力してください。");
+    return;
+  }
+  // Realtime Database の "currentTopic" に書き込み
+  import { set, ref } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+  const currentTopicRef = ref(dbRT, "currentTopic");
+  try {
+    await set(currentTopicRef, topicText);
+    alert("話題が更新されました！");
+    messageInput.value = "";
+    return;
+  } catch (error) {
+    alert("話題更新エラー: " + error.message);
+    return;
+  }
+}
+
 
   // -----------------------
   // Groq OpenAI API を呼び出す関数
