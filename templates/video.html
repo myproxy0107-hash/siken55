@@ -202,7 +202,6 @@
 
 /* ハンバーガー（サイドバーを開くボタン） */
 #open-sidebar {
-  position: fixed;
   top: 70px; /* トップバーの下に配置（数値はトップバーの高さに合わせて調整） */
   right: 15px;
   font-size: 30px;
@@ -224,7 +223,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease;
-  z-index: 1000;
+  z-index: 9999;
 }
 #overlay.active {
   opacity: 1;
