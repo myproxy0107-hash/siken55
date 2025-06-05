@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -71,7 +70,7 @@
       .video-player-container {
         width: 100%;
       }
-      /* 追加：動画ラッパーに相対配置を指定（スピナーの配置基準） */
+      /* 動画プレーヤーラッパー（絶対配置の基準） */
       .video-player-wrapper {
         position: relative;
       }
@@ -80,7 +79,7 @@
         aspect-ratio: 16 / 9;
         background: #000;
       }
-      /* ロード中スピナー（ど真ん中に配置） */
+      /* ロード中スピナー（動画中央に表示） */
       #loader {
         border: 8px solid #f3f3f3;
         border-top: 8px solid #3498db;
@@ -97,6 +96,22 @@
       @keyframes spin {
         0% { transform: translate(-50%, -50%) rotate(0deg); }
         100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      /* 再読み込みボタン（初期は非表示、動画中央に表示） */
+      #reload-btn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 20;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border: none;
+        font-size: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: none;
       }
       .video-description {
         margin-top: 16px;
@@ -187,7 +202,7 @@
         width: 80%;
         max-width: 300px;
         height: 100%;
-        background-color: #000; /* 背景を黒に */
+        background-color: #000;
         box-shadow: 2px 0 5px rgba(0,0,0,0.5);
         overflow-y: auto;
         transition: left 0.3s ease;
@@ -198,7 +213,7 @@
       }
       #sidebar .sidebar-content {
         padding: 20px;
-        color: #fff; /* テキスト色を白に */
+        color: #fff;
       }
       #sidebar a {
         display: block;
@@ -224,23 +239,23 @@
       }
       /* ハンバーガー（サイドバーを開くボタン） */
       #open-sidebar {
-        top: 70px; /* トップバーの下に配置（数値はトップバーの高さに合わせて調整） */
+        top: 70px;
         right: 15px;
         font-size: 30px;
         background: none;
         border: none;
         cursor: pointer;
-        z-index: 9998;
-        color: #007bff; /* サイトのテーマカラーに合わせて変更可能 */
+        z-index: 1050;
+        color: #007bff;
       }
-      /* オーバーレイ（サイドバー以外を薄い黒色に） */
+      /* オーバーレイ */
       #overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.4); /* 薄い黒色 */
+        background: rgba(0, 0, 0, 0.4);
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease;
@@ -254,6 +269,7 @@
     <!-- Font Awesome（アイコン用） -->
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
   </head>
+  
   <body>
     <header id="top-bar">
       <div class="navbar-logo">
@@ -266,8 +282,6 @@
           </fieldset>
         </form>
       </div>
-      <!-- モバイル用ハンバーガーアイコン（ID変更：menuToggle） -->
-     
       <!-- ナビゲーション -->
       <nav id="top-nav">
         <a href="/bbs">掲示板</a>
@@ -309,13 +323,16 @@
           <div class="video-left">
             <div class="video-player-container">
               <div class="video-player-wrapper">
+                <!-- 動画プレーヤー -->
                 <video id="player" controls playsinline preload="none">
                   {% for videourl in videourls %}
                   <source class="player-source" src="{{ videourl }}">
                   {% endfor %}
                 </video>
-                <!-- ロード中スピナー（動画の真ん中に表示される） -->
+                <!-- クルクルスピナー -->
                 <div id="loader"></div>
+                <!-- 再読み込みボタン（初期は非表示） -->
+                <button id="reload-btn" title="再読み込み"><i class="fas fa-sync-alt"></i></button>
               </div>
             </div>
             <!-- 動画の説明 -->
@@ -353,43 +370,42 @@
         </div>
       </main>
     </div>
-<script>
-  const openSidebar = document.getElementById("open-sidebar");
-  const closeSidebar = document.getElementById("close-sidebar");
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("overlay");
 
-  openSidebar.addEventListener("click", () => {
-    sidebar.classList.add("active");
-    overlay.classList.add("active");
-  });
-
-  const closeSidebarFunc = () => {
-    sidebar.classList.remove("active");
-    overlay.classList.remove("active");
-  };
-
-  closeSidebar.addEventListener("click", closeSidebarFunc);
-  overlay.addEventListener("click", closeSidebarFunc);
-</script>
-    <!-- 以下、既存のJavaScript群 -->
-    <!-- 動画ロード中スピナー用のJS -->
+    <!-- 動画ロード中スピナー・再読み込みボタン用のJS -->
     <script>
       const video = document.getElementById("player");
       const loader = document.getElementById("loader");
+      const reloadBtn = document.getElementById("reload-btn");
 
+      // 動画の再生が進んだ場合に、スピナーと再読み込みボタンを消す
       function checkVideoTime() {
         if (video.currentTime > 0) {
           loader.style.display = 'none';
+          reloadBtn.style.display = 'none';
+          clearTimeout(loaderTimeout);
           video.removeEventListener('timeupdate', checkVideoTime);
           video.removeEventListener('playing', checkVideoTime);
         }
       }
-
+      
       video.addEventListener('timeupdate', checkVideoTime);
       video.addEventListener('playing', checkVideoTime);
+
+      // 10秒後に動画が依然として0秒なら、スピナーのアニメーションを停止し再読み込みボタンを表示
+      let loaderTimeout = setTimeout(() => {
+        if (video.currentTime === 0) {
+          loader.style.animation = "none";  // クルクルを停止させる
+          reloadBtn.style.display = "block";  // 再読み込みボタンを表示
+        }
+      }, 10000);
+
+      // 再読み込みボタンをクリックしたら、ページをリロード
+      reloadBtn.addEventListener("click", () => {
+        location.reload();
+      });
     </script>
 
+    <!-- 以降はその他の既存JS -->
     <script>
       const xhr = new XMLHttpRequest();
       xhr.open("GET", "/comments?v=" + getQueryValue('v'));
@@ -520,7 +536,7 @@
     <div class="latest-info" id="latestInfo">
       <h3>welcome!!</h3>
       <div id="infoContent">
-        chatにきchatにきてください‼︎「その他」のところにあります‼︎
+        chatにきてください‼︎「その他」のところにあります‼︎
       </div>
     </div>
     
