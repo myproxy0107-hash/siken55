@@ -385,25 +385,33 @@
     </div>
     
     <!-- プロフィール更新フォーム -->
-    <div id="profile-settings">
-      <h3>プロフィール更新</h3>
-      <select id="newColor">
-        <option value="">-- 色を選択 --</option>
-        <option value="#000000">黒</option>
-        <option value="#FF0000">赤</option>
-        <option value="#0000FF">青</option>
-        <option value="#00FF00">緑</option>
-        <option value="#FFA500">オレンジ</option>
-        <option value="#800080">紫</option>
-        <option value="#808080">灰色</option>
-      </select>
-      <select id="themeSelect">
-        <option value="">-- テーマを選択 --</option>
-        <option value="light">ライト</option>
-        <option value="blue">ブルー</option>
-      </select>
-      <button id="updateProfileButton">更新</button>
-    </div>
+    <!-- プロフィール更新フォーム -->
+<div id="profile-settings">
+  <h3>プロフィール更新</h3>
+  <!-- 既存の名前更新用・パスワード更新用フィールドがあればそのままで -->
+  <input type="text" id="newName" placeholder="新しい名前 (空欄で変更なし)">
+  <input type="password" id="newPassword" placeholder="新しいパスワード (空欄で変更なし)">
+  <!-- 追加：カスタム文入力フィールド（20文字以内） -->
+  <input type="text" id="newCustom" placeholder="好きな文 (20文字以内)" maxlength="20">
+  
+  <select id="newColor">
+    <option value="">-- 色を選択 --</option>
+    <option value="#000000">黒</option>
+    <option value="#FF0000">赤</option>
+    <option value="#0000FF">青</option>
+    <option value="#00FF00">緑</option>
+    <option value="#FFA500">オレンジ</option>
+    <option value="#800080">紫</option>
+    <option value="#808080">灰色</option>
+  </select>
+  <select id="themeSelect">
+    <option value="">-- テーマを選択 --</option>
+    <option value="light">ライト</option>
+    <option value="blue">ブルー</option>
+  </select>
+  <button id="updateProfileButton">更新</button>
+</div>
+
     
     <script>
       // ページは一度だけ自動リロード（テスト用）
@@ -674,66 +682,85 @@ function extractVideoId(url) {
       return options[options.length - 1].name;
     }
     
-         // プロフィール更新処理（名前・パスワード・色・テーマの更新）
     updateProfileButton.addEventListener("click", async () => {
-      const newName = document.getElementById("newName").value.trim();
-      const newPassword = document.getElementById("newPassword").value;
-      const newColor = document.getElementById("newColor").value; // 選択された色
-      const newTheme = document.getElementById("themeSelect").value; // 選択されたテーマ
-      
-      const user = auth.currentUser;
-      if (!user) {
-        alert("ログインしてください。");
-        return;
-      }
-      
-      // 新しい名前が入力されている場合、「ねむい」への変更は不可
-      if (newName !== "" && newName === "ねむい") {
-        alert("名前を「ねむい」に変更することはできません。");
-        return;
-      }
-      
-      try {
-        // 現在の displayName は "名前#ID" または "名前#ID|色" という形式
-        const currentDisplay = user.displayName;
-        const [mainPart, currentColor = ""] = currentDisplay.split("|");
-        let [currentName, forcedId = ""] = mainPart.split("#");
-        
-        let finalName;
-        if (currentName === "ねむい") {
-          finalName = "ねむい";
-        } else {
-          let namePart = newName !== "" ? newName : currentName;
-          forcedId = forcedId || generateForcedId();
-          finalName = `${namePart}#${forcedId}`;
-        }
-        
-        const finalColor = newColor !== "" ? newColor : currentColor;
-        const finalDisplay = finalColor !== "" ? `${finalName}|${finalColor}` : finalName;
-        
-        await updateProfile(user, { displayName: finalDisplay });
-        alert("名前・色が更新されました。");
-        
-        if (newPassword) {
-          await updatePassword(user, newPassword);
-          alert("パスワードが更新されました。");
-        }
-        
-        // テーマ更新：選択されたテーマがあれば、body のクラスを更新し、ローカルストレージに保存
-        if(newTheme) {
-          document.body.classList.remove("theme-default", "theme-dark", "theme-light", "theme-blue");
-          document.body.classList.add("theme-" + newTheme);
-          localStorage.setItem("chatTheme", newTheme);
-        }
-        
-        document.getElementById("newName").value = "";
-        document.getElementById("newPassword").value = "";
-        document.getElementById("newColor").value = "";
-        document.getElementById("themeSelect").value = "";
-      } catch (error) {
-        alert("更新に失敗しました：" + error.message);
-      }
-    });
+  const newName = document.getElementById("newName").value.trim();
+  const newPassword = document.getElementById("newPassword").value;
+  const newCustom = document.getElementById("newCustom").value.trim(); // 追加：カスタム文取得
+  if (newCustom.length > 20) {
+    alert("カスタムメッセージは20文字以内で入力してください。");
+    return;
+  }
+  const newColor = document.getElementById("newColor").value; // 選択された色
+  const newTheme = document.getElementById("themeSelect").value; // 選択されたテーマ
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("ログインしてください。");
+    return;
+  }
+
+  // 現在の displayName は "名前#ID" または "名前#ID|色" または "名前#ID|色|カスタム文" として保存されている
+  const currentDisplay = user.displayName || "";
+  const parts = currentDisplay.split("|");
+  const mainPart = parts[0];        // "名前#ID"
+  const currentColor = parts[1] || "";
+  const currentCustom = parts[2] || "";
+
+  let [currentName, forcedId = ""] = mainPart.split("#");
+
+  // 新しい名前が入力されている場合、「ねむい」への変更は不可
+  if (newName !== "" && newName === "ねむい") {
+    alert("名前を「ねむい」に変更することはできません。");
+    return;
+  }
+
+  let finalName;
+  if (currentName === "ねむい") {
+    finalName = "ねむい";
+  } else {
+    let namePart = newName !== "" ? newName : currentName;
+    forcedId = forcedId || generateForcedId();
+    finalName = `${namePart}#${forcedId}`;
+  }
+
+  const finalColor = newColor !== "" ? newColor : currentColor;
+  // 優先的に新しいカスタム文を使い、未入力なら現在のカスタム文をそのまま使う（無くてもOK）
+  const finalCustom = newCustom !== "" ? newCustom : currentCustom;
+
+  // displayName の組み立て：色情報、カスタム文は任意のため状況に応じてパイプ区切りで追加
+  let finalDisplay = finalName;
+  if (finalColor !== "") {
+    finalDisplay += `|${finalColor}`;
+  }
+  if (finalCustom !== "") {
+    finalDisplay += `|${finalCustom}`;
+  }
+  
+  try {
+    await updateProfile(user, { displayName: finalDisplay });
+    alert("名前・色・カスタム文が更新されました。");
+
+    if (newPassword) {
+      await updatePassword(user, newPassword);
+      alert("パスワードが更新されました。");
+    }
+
+    if(newTheme) {
+      document.body.classList.remove("theme-default", "theme-dark", "theme-light", "theme-blue");
+      document.body.classList.add("theme-" + newTheme);
+      localStorage.setItem("chatTheme", newTheme);
+    }
+
+    document.getElementById("newName").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("newCustom").value = "";
+    document.getElementById("newColor").value = "";
+    document.getElementById("themeSelect").value = "";
+  } catch (error) {
+    alert("更新に失敗しました：" + error.message);
+  }
+});
+
     sendButton.addEventListener("click", async () => {
       const messageText = messageInput.value;
       if (messageText.trim() === "") return;
@@ -1156,30 +1183,41 @@ snapshot.forEach((doc) => {
   messageContainer.className = "message-container";
   messageContainer.style.position = "relative"; // 後で絶対配置するアクションメニュー用
   
-  // ----- 送信者名の表示等（既存コード） -----
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "message-name";
-  let displayName = msg.name || "名無し";
-  let namePart = displayName;
-  let colorCode = "";
-  if (displayName.includes("|")) {
-    [namePart, colorCode] = displayName.split("|");
+  /// ----- 送信者名の表示等（既存コードの変更部分） -----
+const nameDiv = document.createElement("div");
+nameDiv.className = "message-name";
+let displayName = msg.name || "名無し";
+// displayName をパイプ("｜")区切りで分割し、各情報を取得する
+const parts = displayName.split("|");
+const namePart = parts[0]; // "名前#ID"部分（/delete等の処理で利用）
+const colorCode = parts[1] || "";
+const customText = parts[2] || "";
+
+const nameSpan = document.createElement("span");
+if (namePart.split("#")[0] === "ねむい") {
+  nameSpan.className = "rainbow-name";
+  nameSpan.textContent = namePart;
+} else {
+  nameSpan.textContent = namePart;
+  if (pseudoAdmins.has(namePart.split("#")[0])) {
+    nameSpan.textContent += " (擬似管理者)";
   }
-  const span = document.createElement("span");
-  if (namePart === "ねむい") {
-    span.className = "rainbow-name";
-    span.textContent = namePart;
-  } else {
-    span.textContent = namePart;
-    if (pseudoAdmins.has(namePart.split("#")[0])) {
-      span.textContent += " (擬似管理者)";
-    }
-    if (colorCode) {
-      span.style.color = colorCode;
-    }
+  if (colorCode) {
+    nameSpan.style.color = colorCode;
   }
-  nameDiv.appendChild(span);
-  messageContainer.appendChild(nameDiv);
+}
+// もしカスタム文が設定されていれば、グレーで名前より少し小さいスタイルで表示
+if (customText) {
+  const customSpan = document.createElement("span");
+  customSpan.textContent = customText;
+  customSpan.style.color = "gray";
+  customSpan.style.fontSize = "0.8em";
+  customSpan.style.marginLeft = "4px";
+  nameSpan.appendChild(customSpan);
+}
+nameDiv.appendChild(nameSpan);
+messageContainer.appendChild(nameDiv);
+
   
   // ----- ここから「アクションメニュー」の実装 -----
   const currentUser = auth.currentUser;
