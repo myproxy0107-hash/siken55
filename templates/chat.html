@@ -1201,23 +1201,13 @@ const customText = parts[2] || "";
 
 // ----- 送信者名の表示（変更箇所） -----
 const nameSpan = document.createElement("span");
-// displayName をパイプ(|)で区切り、それぞれ「名前#ID」「カラー」「カスタム文」を取得
-const actualName = namePart.split("#")[0];  // 実際の名前部分を抽出
+const actualName = namePart.split("#")[0];  // 「名前」部分を抽出
 
 if (actualName === "ねむい") {
-  // 「ねむい」の場合は、名前部分を文字ごとに金(#FFD700)と銀(#C0C0C0)で交互表示する
-  let partsName = namePart.split("#");
-  let mainName = partsName[0]; // 「ねむい」
-  let idPart = partsName[1] ? "#" + partsName[1] : "";
-  let htmlName = "";
-  for (let i = 0; i < mainName.length; i++) {
-    // 奇数番目は金、偶数番目は銀
-    htmlName += `<span style="color: ${i % 2 === 0 ? '#FFD700' : '#C0C0C0'};">${mainName[i]}</span>`;
-  }
-  htmlName += idPart; // 強制ID部分はそのまま追加（必要であれば）
-  nameSpan.innerHTML = htmlName;
+  // ねむいの場合は、虹色のクラスを使わず、落ち着いた色 (例: darkslategray) を適用
+  nameSpan.textContent = namePart;
+  nameSpan.style.color = "black";
 } else {
-  // それ以外は従来どおり
   nameSpan.textContent = namePart;
   if (pseudoAdmins.has(actualName)) {
     nameSpan.textContent += " (擬似管理者)";
@@ -1227,7 +1217,7 @@ if (actualName === "ねむい") {
   }
 }
 
-// 自己紹介文（カスタム文）は常に灰色、かつ少し小さい文字で表示
+// ※ 自己紹介文（カスタムテキスト）は常に灰色で表示
 if (customText) {
   const customSpan = document.createElement("span");
   customSpan.textContent = customText;
