@@ -331,17 +331,26 @@
         </div>
       </main>
     </div>
+<script>
+  const openSidebar = document.getElementById("open-sidebar");
+  const closeSidebar = document.getElementById("close-sidebar");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
 
-    <script>
-      // ハンバーガーアイコン（ID: menuToggle）でサイドバーの表示・非表示を切り替え
-      document.getElementById('menuToggle').addEventListener('click', function() {
-          document.getElementById('sidebar').classList.add('active');
-      });
-      // サイドバー内の閉じるボタンでサイドバーを閉じる
-      document.getElementById('close-sidebar').addEventListener('click', function() {
-          document.getElementById('sidebar').classList.remove('active');
-      });
-    </script>
+  openSidebar.addEventListener("click", () => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  });
+
+  const closeSidebarFunc = () => {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+  };
+
+  closeSidebar.addEventListener("click", closeSidebarFunc);
+  overlay.addEventListener("click", closeSidebarFunc);
+</script>
+
 
     <script>
       const xhr = new XMLHttpRequest();
