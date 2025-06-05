@@ -353,7 +353,25 @@
         </div>
       </main>
     </div>
+<script>
+  const openSidebar = document.getElementById("open-sidebar");
+  const closeSidebar = document.getElementById("close-sidebar");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
 
+  openSidebar.addEventListener("click", () => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  });
+
+  const closeSidebarFunc = () => {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+  };
+
+  closeSidebar.addEventListener("click", closeSidebarFunc);
+  overlay.addEventListener("click", closeSidebarFunc);
+</script>
     <!-- 以下、既存のJavaScript群 -->
     <!-- 動画ロード中スピナー用のJS -->
     <script>
