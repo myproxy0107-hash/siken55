@@ -883,9 +883,15 @@ if (messageText.startsWith("/you ")) {
             const snapshot = await getDocs(chatCollection);
             snapshot.forEach(async (docSnap) => {
               const msg = docSnap.data();
-              if (msg.name && msg.name.startsWith(targetName)) {
-                await deleteDoc(docSnap.ref);
-              }
+              if (msg.name) {
+  // displayName は "名前#ID|…" の形式として保存されているので、パイプ(|)で区切り、
+  // 先頭の「名前#ID」から「#」の前の部分を取得して比較する
+  const baseName = msg.name.split("|")[0].split("#")[0];
+  if (baseName === targetName) {
+    await deleteDoc(docSnap.ref);
+  }
+}
+
             });
             console.log(`ユーザー「${targetName}」のメッセージを削除しました。`);
           } catch (error) {
