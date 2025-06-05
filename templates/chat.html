@@ -454,9 +454,6 @@
       serverTimestamp,
       onValue
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-    import {
-      currentTopic
-    }
     
     
     // Firebase 設定
@@ -479,6 +476,31 @@
     const MAX_MESSAGES = 50;
     let pseudoAdmins = new Set();
     let mutedUsers = {};
+
+    // ----- currentTopic のリアルタイム監視 & 更新用設定 -----
+// ヘッダーにある "current-topic" 表示領域を更新するため、Realtime Database の "currentTopic" ノードを監視
+const currentTopicRef = ref(dbRT, "currentTopic");
+onValue(currentTopicRef, (snapshot) => {
+  const topic = snapshot.val();
+  const topicElem = document.getElementById("current-topic"); // HTML内にある表示用の <div id="current-topic"> を想定
+  if (topic) {
+    topicElem.textContent = topic;
+    topicElem.style.display = "block";
+  } else {
+    topicElem.style.display = "none";
+  }
+});
+
+// /topic コマンドで currentTopic を更新する関数
+async function updateCurrentTopic(topicText) {
+  try {
+    await set(currentTopicRef, topicText);
+    console.log("currentTopic を更新しました:" + topicText);
+  } catch (error) {
+    console.error("currentTopic 更新エラー:", error);
+  }
+}
+
     
   // 例：既存の extractVideoId 関数（なければ下記を利用）
 function extractVideoId(url) {
@@ -567,19 +589,6 @@ function extractVideoId(url) {
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
-// Realtime Database の "currentTopic" を監視
-const currentTopicRef = dbRef(dbRT, "currentTopic");
-onValue(currentTopicRef, (snapshot) => {
-  const topic = snapshot.val();
-  const topicElem = document.getElementById("current-topic");
-  if (topic) {
-    topicElem.textContent = topic;
-    topicElem.style.display = "block";
-  } else {
-    topicElem.style.display = "none";
-  }
-});
-    
     signupButton.addEventListener("click", async () => {
       const name = document.getElementById("signupName").value;
       const password = document.getElementById("signupPassword").value;
@@ -980,19 +989,12 @@ if (messageText.startsWith("/topic ")) {
     alert("話題を入力してください。");
     return;
   }
-  // Realtime Database の "currentTopic" に書き込み
-  import { set, ref } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-  const currentTopicRef = ref(dbRT, "currentTopic");
-  try {
-    await set(currentTopicRef, topicText);
-    alert("話題が更新されました！");
-    messageInput.value = "";
-    return;
-  } catch (error) {
-    alert("話題更新エラー: " + error.message);
-    return;
-  }
+  await updateCurrentTopic(topicText);
+  alert("話題が更新されました！");
+  messageInput.value = "";
+  return;
 }
+
 
 
   // -----------------------
