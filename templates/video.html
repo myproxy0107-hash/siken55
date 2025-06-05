@@ -373,37 +373,39 @@
 
     <!-- 動画ロード中スピナー・再読み込みボタン用のJS -->
     <script>
-      const video = document.getElementById("player");
-      const loader = document.getElementById("loader");
+  const video = document.getElementById("player");
+  const loader = document.getElementById("loader");
+
+  // 動画の再生が進んだらスピナーを非表示にする(既存の処理)
+  function checkVideoTime() {
+    if (video.currentTime > 0) {
+      loader.style.display = 'none';
+      clearTimeout(loaderTimeout);
+      video.removeEventListener('timeupdate', checkVideoTime);
+      video.removeEventListener('playing', checkVideoTime);
+    }
+  }
+  video.addEventListener('timeupdate', checkVideoTime);
+  video.addEventListener('playing', checkVideoTime);
+
+  // 「再生」クリック時に currentTime が0なら loader を表示する
+  video.addEventListener("play", () => {
+    if (video.currentTime === 0) {
+      loader.style.display = "block"; // 既定の状態が表示される
+    }
+  });
+
+  // ※もし、10秒経過しても currentTimeが0の場合などリロードボタンの処理もあるならこちらも利用できます。
+  let loaderTimeout = setTimeout(() => {
+    if (video.currentTime === 0) {
+      loader.style.animation = "none";  // クルクルを停止させる
+      // 例えば、再読み込みボタンを表示する処理をここに追加…
       const reloadBtn = document.getElementById("reload-btn");
+      if (reloadBtn) reloadBtn.style.display = "block";
+    }
+  }, 10000);
+</script>
 
-      // 動画の再生が進んだ場合に、スピナーと再読み込みボタンを消す
-      function checkVideoTime() {
-        if (video.currentTime > 0) {
-          loader.style.display = 'none';
-          reloadBtn.style.display = 'none';
-          clearTimeout(loaderTimeout);
-          video.removeEventListener('timeupdate', checkVideoTime);
-          video.removeEventListener('playing', checkVideoTime);
-        }
-      }
-      
-      video.addEventListener('timeupdate', checkVideoTime);
-      video.addEventListener('playing', checkVideoTime);
-
-      // 10秒後に動画が依然として0秒なら、スピナーのアニメーションを停止し再読み込みボタンを表示
-      let loaderTimeout = setTimeout(() => {
-        if (video.currentTime === 0) {
-          loader.style.animation = "none";  // クルクルを停止させる
-          reloadBtn.style.display = "block";  // 再読み込みボタンを表示
-        }
-      }, 10000);
-
-      // 再読み込みボタンをクリックしたら、ページをリロード
-      reloadBtn.addEventListener("click", () => {
-        location.reload();
-      });
-    </script>
     <script>
   const openSidebar = document.getElementById("open-sidebar");
   const closeSidebar = document.getElementById("close-sidebar");
