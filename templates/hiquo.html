@@ -332,9 +332,6 @@
       </div>
     </div>
     <div id="overlay"></div>
-	   <audio id="audio" controls>
-           <source src= "{{ videourls[0] }}" type="audio/mp3">
- </audio>
 	<div class="no-theme">
 <main class="main-content">
     <div class="video-container">
@@ -354,6 +351,9 @@
         </div>
         <!-- 動画の説明を動画の真下に配置 -->
         <div class="video-description" id="descriptionText">
+		<audio id="audio" controls>
+           <source src= "{{ videourls[0] }}" type="audio/mp3">
+ </audio>
 			<h1>{{ video_title }}</h1>
                     <p style="display: inline-block; margin-right: 10px; vertical-align: super;">{{ view_count }}回視聴</p>
                     <div style="display: inline-block;"><span class="material-symbols-outlined" style="display: inline-block; padding-right: 5px;">thumb_up</span><p style="display: inline-block; vertical-align: super; ">{{ like_count }}</p></div>
