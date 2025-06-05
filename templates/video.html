@@ -404,6 +404,25 @@
         location.reload();
       });
     </script>
+    <script>
+  const openSidebar = document.getElementById("open-sidebar");
+  const closeSidebar = document.getElementById("close-sidebar");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+
+  openSidebar.addEventListener("click", () => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  });
+
+  const closeSidebarFunc = () => {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+  };
+
+  closeSidebar.addEventListener("click", closeSidebarFunc);
+  overlay.addEventListener("click", closeSidebarFunc);
+</script>
 
     <!-- 以降はその他の既存JS -->
     <script>
