@@ -41,7 +41,6 @@
         color: var(--yt-spec-text-primary);
         margin: 0;
         padding: 0;
-        line-height: 1.4;
       }
       @media (max-width: 768px) {
         .shorts-link span {
@@ -266,6 +265,17 @@
         opacity: 1;
         visibility: visible;
       }
+      /* サイドバー内の各項目を区切る */
+#sidebar .sidebar-content > * {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* 白系の薄い線 */
+  padding: 10px 0;
+  margin: 0; /* 余計な外側のマージンがある場合はリセット */
+}
+
+#sidebar .sidebar-content > *:last-child {
+  border-bottom: none; /* 最後の項目は下線なし */
+}
+
     </style>
     <!-- Font Awesome（アイコン用） -->
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
