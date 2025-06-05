@@ -1200,19 +1200,23 @@ const colorCode = parts[1] || "";
 const customText = parts[2] || "";
 
 const nameSpan = document.createElement("span");
-if (namePart.split("#")[0] === "ねむい") {
-  nameSpan.className = "rainbow-name";
+const actualName = namePart.split("#")[0];  // 「名前」部分を抽出
+
+if (actualName === "ねむい") {
+  // ねむいの場合は、虹色のクラスを使わず、落ち着いた色 (例: darkslategray) を適用
   nameSpan.textContent = namePart;
+  nameSpan.style.color = "darkslategray";
 } else {
   nameSpan.textContent = namePart;
-  if (pseudoAdmins.has(namePart.split("#")[0])) {
+  if (pseudoAdmins.has(actualName)) {
     nameSpan.textContent += " (擬似管理者)";
   }
   if (colorCode) {
     nameSpan.style.color = colorCode;
   }
 }
-// もしカスタム文が設定されていれば、グレーで名前より少し小さいスタイルで表示
+
+// ※ 自己紹介文（カスタムテキスト）は常に灰色で表示
 if (customText) {
   const customSpan = document.createElement("span");
   customSpan.textContent = customText;
@@ -1221,6 +1225,7 @@ if (customText) {
   customSpan.style.marginLeft = "4px";
   nameSpan.appendChild(customSpan);
 }
+
 nameDiv.appendChild(nameSpan);
 messageContainer.appendChild(nameDiv);
 
