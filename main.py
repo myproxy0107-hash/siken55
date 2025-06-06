@@ -204,7 +204,6 @@ for (api_type, base_url) in combined_apis:
             except Exception as ex:
                 print(f"Err0r: {base_url}: {ex}")
 elif api_type == "fallback":
-            clean_videoid = videoid.rstrip(':')
             fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
             print(f"Invidious API failed, falling back to {fallback_full_url}")
             try:
