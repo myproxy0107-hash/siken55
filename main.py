@@ -203,16 +203,16 @@ for (api_type, base_url) in combined_apis:
                     print(f"Returned Err0r: {base_url} ('{res.text[:100]}')")
             except Exception as ex:
                 print(f"Err0r: {base_url}: {ex}")
-elif api_type == "fallback":
+if api_type == "fallback":
     fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
     print(f"Invidious API failed, falling back to {fallback_full_url}")
     try:
         # SSL検証無効化と延長タイムアウトを使用
         r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout, verify=False)
-        if r.status_code == 495:
+        elif r.status_code == 495:
             print(f"Fallback API {fallback_full_url} returned 495 error. Skipping.")
             continue
-        if r.status_code == 200 and isJSON(r.text):
+        elif r.status_code == 200 and isJSON(r.text):
             data = json.loads(r.text)
             if data.get("stream_url"):
                 fallback_data = data
