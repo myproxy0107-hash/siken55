@@ -453,6 +453,10 @@
       onDisconnect,
       set,
       serverTimestamp,
+      setDoc, onSnapshot, 
+      collection,
+      getDocs, 
+      deleteDoc,
       onValue
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     
@@ -475,6 +479,7 @@
     const db = getFirestore(appFB);
     const dbRT = getDatabase(appFB);
     
+    const currentTopicDocRef = doc(db, "settings", "currentTopic");
     const MAX_MESSAGES = 50;
     let pseudoAdmins = new Set();
     let mutedUsers = {};
@@ -980,8 +985,62 @@ if (messageText.startsWith("/you ")) {
       }
       
       
-      // ★ /topic コマンド ★
+      /// Firestore の "settings" コレクション内の "currentTopic" ドキュメントへの参照
+import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+const db = getFirestore(appFB);
+const currentTopicDocRef = doc(db, "settings", "currentTopic");
+
+// リアルタイムで "currentTopic" ドキュメントを監視し、変更があればヘッダーの表示を更新する
+onSnapshot(currentTopicDocRef, (docSnap) => {
+  const topicElem = document.getElementById("current-topic");
+  if (docSnap.exists()) {
+    const topic = docSnap.data().topic;
+    if (topic) {
+      topicElem.textContent = topic;
+      topicElem.style.display = "block";
+    } else {
+      topicElem.style.display = "none";
+    }
+  } else {
+    topicElem.style.display = "none";
+  }
+});
+
+// /topic コマンドで currentTopic を更新する関数
+async function updateCurrentTopic(topicText) {
+  try {
+    await setDoc(currentTopicDocRef, { topic: topicText });
+    console.log("currentTopic を更新しました:", topicText);
+    // 更新後、チャット内に残る古い /topic メッセージを削除する
+    await deleteOldTopicCommands();
+  } catch (error) {
+    console.error("currentTopic 更新エラー:", error);
+  }
+}
+
+// チャットコレクション内から、/topic コマンドで送信されたメッセージを削除する関数
+async function deleteOldTopicCommands() {
+  try {
+    // コレクション名 "chat" と仮定しています
+    const chatCollection = collection(db, "chat");
+    const snapshot = await getDocs(chatCollection);
+    snapshot.forEach(async (docSnap) => {
+      const data = docSnap.data();
+      // 古い /topic コマンドのメッセージ（文字列が "/topic " で始まるもの）をチェックして削除
+      if (data.text && data.text.startsWith("/topic ")) {
+        await deleteDoc(docSnap.ref);
+      }
+    });
+    console.log("古い /topic コマンドを削除しました。");
+  } catch (error) {
+    console.error("古い /topic コマンドの削除エラー:", error);
+  }
+}
+
+// 以下、sendButton クリック時の処理などの中で /topic コマンドに対応する部分
 if (messageText.startsWith("/topic ")) {
+  // 管理者専用（例として、userBaseName のチェック）
   if (userBaseName.split("#")[0] !== "ねむい") {
     alert("この操作は権限がありません。");
     return;
@@ -991,13 +1050,12 @@ if (messageText.startsWith("/topic ")) {
     alert("話題を入力してください。");
     return;
   }
+  // Firestore の "currentTopic" ドキュメントを更新し、かつ古い /topic メッセージを削除
   await updateCurrentTopic(topicText);
   alert("話題が更新されました！");
   messageInput.value = "";
   return;
 }
-
-
 
   // -----------------------
   // Groq OpenAI API を呼び出す関数
