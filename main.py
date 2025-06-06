@@ -171,6 +171,8 @@ def getVideoData(videoid):
     fallback_data = None
     primary_data = None
 
+fallback_timeout = (max_api_wait_time[10], max_api_wait_time[10] * 20)  # 例: (1.5, 2)
+  
     # 両方のAPIを交互にリクエスト
     for (api_type, base_url) in combined_apis:
         if time.time() - starttime >= max_time - 1:
