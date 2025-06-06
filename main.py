@@ -224,7 +224,6 @@ if api_type == "fallback":
             print(f"Fallback API {fallback_full_url} returned status: {r.status_code}")
     except Exception as exc:
         print(f"Error accessing fallback API {fallback_full_url}: {exc}")
-        continue
 
     # fallback_data があれば、primary と同じ形式で返す
     if fallback_data:
