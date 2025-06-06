@@ -478,29 +478,34 @@
     let pseudoAdmins = new Set();
     let mutedUsers = {};
 
-    // ----- currentTopic のリアルタイム監視 & 更新用設定 -----
-// ヘッダーにある "current-topic" 表示領域を更新するため、Realtime Database の "currentTopic" ノードを監視
+    // ----- currentTopic のリアルタイム監視と更新設定 -----
+
+// "currentTopic" ノードへの参照を取得
 const currentTopicRef = ref(dbRT, "currentTopic");
+
+// リアルタイムで "currentTopic" の値を監視し、変更があれば HTML 内の表示領域を更新する
 onValue(currentTopicRef, (snapshot) => {
   const topic = snapshot.val();
-  const topicElem = document.getElementById("current-topic"); // HTML内にある表示用の <div id="current-topic"> を想定
+  const topicElem = document.getElementById("current-topic"); // ヘッダー内に設置した表示用の <div id="current-topic">
   if (topic) {
     topicElem.textContent = topic;
-    topicElem.style.display = "block";
+    topicElem.style.display = "block";  // 値が存在する場合は表示
   } else {
-    topicElem.style.display = "none";
+    topicElem.style.display = "none";     // 空の場合は非表示
   }
 });
 
-// /topic コマンドで currentTopic を更新する関数
+// /topic コマンドによって currentTopic を更新する関数
 async function updateCurrentTopic(topicText) {
   try {
+    // "currentTopic" ノードに topicText を書き込む（ノードが存在しなければ自動生成される）
     await set(currentTopicRef, topicText);
-    console.log("currentTopic を更新しました:" + topicText);
+    console.log("currentTopic を更新しました:", topicText);
   } catch (error) {
     console.error("currentTopic 更新エラー:", error);
   }
 }
+
 
     
   // 例：既存の extractVideoId 関数（なければ下記を利用）
