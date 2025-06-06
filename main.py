@@ -207,12 +207,12 @@ fallback_timeout = (max_api_wait_time[10], max_api_wait_time[10] * 20)  # 例: (
 
         elif api_type == "fallback":
             # 動画IDのサニタイズ（末尾の余分なコロンを除去）
-            clean_videoid = videoid.rstrip(':')
+                        clean_videoid = videoid.rstrip(':')
             fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
             print(f"Invidious API failed, falling back to {fallback_full_url}")
             try:
-                # fallback も primary と同様のタイムアウト設定に変更
-                r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=max_api_wait_time)
+                # fallback用には延長したタイムアウトを使用
+                r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout)
                 if r.status_code == 200 and isJSON(r.text):
                     data = json.loads(r.text)
                     # fallback API では 'stream_url' の存在が成功の判定
