@@ -204,25 +204,28 @@ for (api_type, base_url) in combined_apis:
             except Exception as ex:
                 print(f"Err0r: {base_url}: {ex}")
 elif api_type == "fallback":
-            fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
-            print(f"Invidious API failed, falling back to {fallback_full_url}")
-            try:
-                # fallback用には延長したタイムアウトを使用
-                r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout)
-                if r.status_code == 200 and isJSON(r.text):
-                    data = json.loads(r.text)
-                    # fallback API では 'stream_url' の存在が成功の判定
-                    if data.get("stream_url"):
-                        fallback_data = data
-                        print(f"Success(fallback): {base_url}")
-                        break
-                    else:
-                        print(f"Fallback API response at {fallback_full_url} is missing 'stream_url'.")
-                else:
-                    print(f"Fallback API {fallback_full_url} returned status: {r.status_code}")
-            except Exception as exc:
-                print(f"Error accessing fallback API {fallback_full_url}: {exc}")
-                continue
+    clean_videoid = videoid.rstrip(':')
+    fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
+    print(f"Invidious API failed, falling back to {fallback_full_url}")
+    try:
+        # SSL検証無効化と延長タイムアウトを使用
+        r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout, verify=False)
+        if r.status_code == 495:
+            print(f"Fallback API {fallback_full_url} returned 495 error. Skipping.")
+            continue
+        if r.status_code == 200 and isJSON(r.text):
+            data = json.loads(r.text)
+            if data.get("stream_url"):
+                fallback_data = data
+                print(f"Success(fallback): {base_url}")
+                break
+            else:
+                print(f"Fallback API response at {fallback_full_url} is missing 'stream_url'.")
+        else:
+            print(f"Fallback API {fallback_full_url} returned status: {r.status_code}")
+    except Exception as exc:
+        print(f"Error accessing fallback API {fallback_full_url}: {exc}")
+        continue
 
     # fallback_data があれば、primary と同じ形式で返す
     if fallback_data:
