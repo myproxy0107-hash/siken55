@@ -209,7 +209,7 @@ if api_type == "fallback":
     try:
         # SSL検証無効化と延長タイムアウトを使用
         r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout, verify=False)
-        elif r.status_code == 495:
+        if r.status_code == 495:
             print(f"Fallback API {fallback_full_url} returned 495 error. Skipping.")
             continue
         elif r.status_code == 200 and isJSON(r.text):
