@@ -242,7 +242,6 @@ if api_type == "fallback":
             'subscribers_count': fallback_data.get("subscribers_count", "Fallback"),
             'streamUrls': []
         }
-        return [fallback_video, []]
 
     elif primary_data:
         t = primary_data
