@@ -211,7 +211,6 @@ if api_type == "fallback":
         r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=fallback_timeout, verify=False)
         if r.status_code == 495:
             print(f"Fallback API {fallback_full_url} returned 495 error. Skipping.")
-            continue
         elif r.status_code == 200 and isJSON(r.text):
             data = json.loads(r.text)
             if data.get("stream_url"):
