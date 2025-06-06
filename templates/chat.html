@@ -478,36 +478,11 @@
     const auth = getAuth(appFB);
     const db = getFirestore(appFB);
     const dbRT = getDatabase(appFB);
-    
-    const currentTopicDocRef = doc(db, "settings", "currentTopic");
+
     const MAX_MESSAGES = 50;
     let pseudoAdmins = new Set();
     let mutedUsers = {};
-// たとえば "currentTopic" ノードにアクセスする場合
-const currentTopicRef = ref(dbRT, "currentTopic");
-
-// データ書き込み: ノードが存在しない場合、set() によって自動作成されます
-async function updateCurrentTopic(topicText) {
-  try {
-    await set(currentTopicRef, topicText);
-    console.log("currentTopic を更新しました:", topicText);
-  } catch (error) {
-    console.error("currentTopic 更新エラー:", error);
-  }
-}
-
-// リアルタイム監視: "currentTopic" の値が更新されるとこの onValue のコールバックが呼ばれる
-onValue(currentTopicRef, (snapshot) => {
-  const topic = snapshot.val();
-  const topicElem = document.getElementById("current-topic");
-  if (topic) {
-    topicElem.textContent = topic;
-    topicElem.style.display = "block";
-  } else {
-    topicElem.style.display = "none";
-  }
-});
-
+    
     
   // 例：既存の extractVideoId 関数（なければ下記を利用）
 function extractVideoId(url) {
