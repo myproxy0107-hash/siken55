@@ -216,7 +216,6 @@ if api_type == "fallback":
             if data.get("stream_url"):
                 fallback_data = data
                 print(f"Success(fallback): {base_url}")
-                break
             else:
                 print(f"Fallback API response at {fallback_full_url} is missing 'stream_url'.")
         else:
