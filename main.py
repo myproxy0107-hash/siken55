@@ -143,7 +143,7 @@ def getVideoData(videoid):
     # primary (Invidious API) のエンドポイント
     primary_apis = [("primary", api) for api in invidious_api.video]
     
-    # fallback API のリスト（末尾は余分な文字が入らないように注意）
+    # fallback API のリスト
     fallback_api_list = [
         'https://watawata8.glitch.me/api/',
         'https://watawata37.glitch.me/api/',
@@ -177,48 +177,43 @@ def getVideoData(videoid):
             break
 
         if api_type == "primary":
-            # primary (Invidious API) の場合、URLに 'api/v1' を付加する
             full_url = f"{base_url}api/v1{path}"
             print(full_url)
             try:
                 res = requests.get(full_url, headers=getRandomUserAgent(), timeout=max_api_wait_time)
                 if res.status_code == requests.codes.ok and isJSON(res.text):
                     data = json.loads(res.text)
-                    # 必要なら動画の有無チェック
+                    # 動画の有無チェック（必要な場合）
                     if invidious_api.check_video and path.startswith('/video/'):
                         stream_url = data['formatStreams'][0]['url']
                         video_res = requests.get(stream_url, headers=getRandomUserAgent(), timeout=(3.0, 0.5))
                         if 'video' not in video_res.headers.get('Content-Type', ''):
                             print(f"No Video(True)({video_res.headers.get('Content-Type', '')}): {base_url}")
                             continue
-                    if path.startswith('/channel/') and data.get("latestvideo", []) == []:
+                    if path.startswith('/channel/') and data.get("latestvideo") == []:
                         print(f"No Channel: {base_url}")
                         continue
                     print(f"Success(primary): {base_url}")
                     primary_data = data
-                    break  # 成功したタイミングでループ終了
+                    break  # 成功したらループ終了
                 elif isJSON(res.text):
                     print(f"Returned Err0r(JSON): {base_url} ('{json.loads(res.text).get('error', '')}')")
-                    continue
                 else:
                     print(f"Returned Err0r: {base_url} ('{res.text[:100]}')")
-                    continue
             except Exception as ex:
                 print(f"Err0r: {base_url}: {ex}")
-                continue
 
         elif api_type == "fallback":
-            # 動画IDをサニタイズ（末尾の余分なコロンを除去）
+            # 動画IDのサニタイズ（末尾の余分なコロンを除去）
             clean_videoid = videoid.rstrip(':')
-            # fallback API の場合はURLに直接動画IDを付加する形（例: https://watawata8.glitch.me/api/ID）
             fallback_full_url = f"{base_url}{urllib.parse.quote(clean_videoid)}"
             print(f"Invidious API failed, falling back to {fallback_full_url}")
             try:
-                # タイムアウトの読み込み時間を延長（read timeout = 3秒）
-                r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=(3.0, 3))
+                # fallback も primary と同様のタイムアウト設定に変更
+                r = requests.get(fallback_full_url, headers=getRandomUserAgent(), timeout=max_api_wait_time)
                 if r.status_code == 200 and isJSON(r.text):
                     data = json.loads(r.text)
-                    # fallback API では 'stream_url' の存在で成功を判定
+                    # fallback API では 'stream_url' の存在が成功の判定
                     if data.get("stream_url"):
                         fallback_data = data
                         print(f"Success(fallback): {base_url}")
@@ -231,21 +226,23 @@ def getVideoData(videoid):
                 print(f"Error accessing fallback API {fallback_full_url}: {exc}")
                 continue
 
-    # fallback APIを使用した場合、高画質 streamは Invidious API のみから取得可能なため""を返す
+    # fallback_data があれば、primary と同じ形式で返す
     if fallback_data:
+        fb_url = fallback_data.get("stream_url")
         fallback_video = {
-            'video_urls': [fallback_data.get("stream_url")],
-            'highstream_url': "",
+            'video_urls': [fb_url],
+            'highstream_url': fb_url,  # stream_url があれば高画質としても利用
             'audio_url': fallback_data.get("audioUrl", ""),
-            'description_html': "Load Failed",
-            'title': "Load Failed",
-            'length_text': "0:00:00",
-            'author_id': "Load Failed",
-            'author': "Load Failed",
-            'author_thumbnails_url': "",
-            'view_count': 0,
-            'like_count': 0,
-            'subscribers_count': "Load Failed",
+            'description_html': fallback_data.get("descriptionHtml", "Fallback API provided minimal data."),
+            'title': fallback_data.get("title", "Fallback Video"),
+            # fallback API には正確な秒数がない場合はプレースホルダーとなる
+            'length_text': fallback_data.get("length_text", "0:00:00"),
+            'author_id': fallback_data.get("authorId", "Fallback"),
+            'author': fallback_data.get("author", "Fallback"),
+            'author_thumbnails_url': fallback_data.get("authorThumbnails_url", ""),
+            'view_count': fallback_data.get("viewCount", 0),
+            'like_count': fallback_data.get("likeCount", 0),
+            'subscribers_count': fallback_data.get("subscribers_count", "Fallback"),
             'streamUrls': []
         }
         return [fallback_video, []]
@@ -267,24 +264,20 @@ def getVideoData(videoid):
                 "viewCountText": "Load Failed"
             }]
 
-        # Invidious API の adaptiveFormats から高画質動画 (highstream_url) と音声 (audio_url) を抽出
+        # adaptiveFormats から高画質動画 (highstream_url) と音声 (audio_url) を抽出
         adaptiveFormats = t.get("adaptiveFormats", [])
         highstream_url = None
-        audio_url = None
-
-        # 1080p の WebM stream を優先して探す
         for stream in adaptiveFormats:
             if stream.get("container") == "webm" and stream.get("resolution") == "1080p":
                 highstream_url = stream.get("url")
                 break
         if not highstream_url:
-            # 720p を代替案として
             for stream in adaptiveFormats:
                 if stream.get("container") == "webm" and stream.get("resolution") == "720p":
                     highstream_url = stream.get("url")
                     break
 
-        # 音声 stream の抽出
+        audio_url = None
         for stream in adaptiveFormats:
             if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
                 audio_url = stream.get("url")
@@ -323,6 +316,9 @@ def getVideoData(videoid):
                 "view_count_text": i.get("viewCountText", "Load Failed")
             } for i in recommended_videos]
         ]
+    
+    raise APITimeoutError("APIがタイムアウトしました")
+
 
 
 def getSearchData(q, page):
