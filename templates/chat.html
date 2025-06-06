@@ -454,7 +454,7 @@
       set,
       serverTimestamp,
       onValue
-     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     
     
     // Firebase 設定
@@ -472,7 +472,7 @@
     const appFB = initializeApp(firebaseConfig);
     const auth = getAuth(appFB);
     const db = getFirestore(appFB);
-　　　const dbRT = getDatabase(appFB);
+    const dbRT = getDatabase(appFB);
     
     const MAX_MESSAGES = 50;
     let pseudoAdmins = new Set();
