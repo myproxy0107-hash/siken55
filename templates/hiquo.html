@@ -17,8 +17,7 @@
     <script src="/js/utils/utils.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <!-- ブラウザによる早期読み込み用 -->
-    <link rel="preload" as="audio" href="{{ audio_url }}">
-    <style>  audi {
+    <style>  audio {
         display: none;
     }
       /* もともとのCSS */
@@ -300,9 +299,6 @@
         <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a>
         <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質で視聴する</a>
         <a href="javascript:location.replace('/history')">履歴を閲覧</a>
-	      <audio id="audio" controls>
-	<source src="{{ videourls[0] }}" type="audio/mp3">
-	</audio>
           <label for="autonextpage">
             自動で次の動画に遷移
             <input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)">
@@ -342,8 +338,8 @@
 	      
         <!-- コメントエリア -->
 	      <audio id="audio" controls>
-							<source id="audio" src="{{ videourls[0] }}" type="audio/mp3">
-						</audio>
+	<source src="{{ videourls[0] }}" type="audio/mp3">
+	</audio>
         <div class="comments-section">
           <h3>コメント</h3>
                             <div id="comments"></div>
@@ -598,15 +594,6 @@
             video.currentTime = 0;
             video.play();
           });
-        });
-      </script>
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          var audioElem = document.getElementById('audio');
-          if (audioElem) {
-            audioElem.load();
-            console.log('Audio preload called');
-          }
         });
       </script>
 
