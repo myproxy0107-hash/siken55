@@ -562,7 +562,7 @@
 		       <script>
     $(document).ready(function(){
           // 動画と音声の要素を取得
-          var video = document.getElementById('player');
+          var video = document.getElementById('videoPlayer');
           var audio = document.getElementById('audio');
       
           // 動画再生時、現在の再生位置に合わせた上で音声も再生する
@@ -613,7 +613,7 @@
 <script>
        $(document).ready(function(){
           // 動画と音声の要素を取得
-          var video = document.getElementById('videosrc');
+          var video = document.getElementById('videoPlayer');
           var audio = document.getElementById('audio');
 
        video.addEventListener('play', () => {
@@ -653,7 +653,7 @@
      </script>
      <script>
     document.getElementById('reloadButton').addEventListener('click', function() {
-    const video = document.getElementById('videosrc');
+    const video = document.getElementById('videoPlayer');
     const audio = document.getElementById('audio');
     
     video.load();
