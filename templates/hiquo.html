@@ -559,7 +559,7 @@
         }, 5000);
       });
     </script>
-		   <script>
+		       <script>
     $(document).ready(function(){
           // 動画と音声の要素を取得
           var video = document.getElementById('player');
@@ -590,7 +590,7 @@
       <script>
         $(document).ready(function(){
           // 動画要素を取得
-          var video = document.getElementById('player');
+          var video = document.getElementById('videosrc');
           
           // ボタンがクリックされたときの処理（元の処理）
           $("#startButton").on("click", function(){
@@ -613,7 +613,7 @@
 <script>
        $(document).ready(function(){
           // 動画と音声の要素を取得
-          var video = document.getElementById('player');
+          var video = document.getElementById('videosrc');
           var audio = document.getElementById('audio');
 
        video.addEventListener('play', () => {
@@ -653,31 +653,13 @@
      </script>
      <script>
     document.getElementById('reloadButton').addEventListener('click', function() {
-    const video = document.getElementById('player');
+    const video = document.getElementById('videosrc');
     const audio = document.getElementById('audio');
     
     video.load();
     audio.load();
 });
      </script>
-    <script>
-    // ボタン要素を取得
-    const restartBtn = document.getElementById("restartBtn");
-
-    // ボタンにクリックイベントリスナーを設定
-    restartBtn.addEventListener("click", () => {
-      // audio要素を取得
-      const audioPlayer = document.getElementById("audio");
-      const videoPlayer = document.getElementById("player");
-
-      // 再生位置を先頭(0秒)にリセット
-      audio.currentTime = 0;
-      video.currentTime = 0;
-
-      // 音声を再生（再起動）
-      audio.play();
-    });
-  </script>
     
     <!-- 動画視聴ページ用の履歴登録スクリプト -->
     <script>
