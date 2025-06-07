@@ -300,6 +300,9 @@
         <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a>
         <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質で視聴する</a>
         <a href="javascript:location.replace('/history')">履歴を閲覧</a>
+	      <audio id="audio" controls>
+	<source src="{{ videourls[0] }}" type="audio/mp3">
+	</audio>
           <label for="autonextpage">
             自動で次の動画に遷移
             <input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)">
