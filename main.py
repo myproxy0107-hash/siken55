@@ -152,7 +152,7 @@ def validate_stream_url(url, timeout=(3.0, 0.5)):
             print(f"validate_stream_url: Content-Type 不正 {content_type}")
             return False
         # 短い動画データであれば、一般的に最低限のバイト数が返ってくるはず
-        if len(response.content) < 100:  # ここは適宜しきい値を設定（例: 100バイト未満なら不正）
+        if len(response.content) > 10000:  # ここは適宜しきい値を設定（例: 100バイト未満なら不正）
             print("validate_stream_url: コンテンツが極端に小さい")
             return False
         return True
