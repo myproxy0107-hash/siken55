@@ -207,28 +207,6 @@ def getVideoData(videoid):
                 audio_url = stream.get("url")
                 break
 
-    # formatStreams の方でも、無効な URL を除外するアプローチ
-    valid_video_urls = []
-    for stream in t.get("formatStreams", []):
-        url = stream.get("url")
-        if url and validate_stream_url(url):
-            valid_video_urls.append(url)
-        else:
-            print(f"formatStreams 内の streamURL が無効: {url}")
-
-    if not valid_video_urls:
-        # もし利用可能な動画URLがなければタイムアウトと同様のエラー処理を行う
-        raise APITimeoutError("有効な動画ストリームが取得できませんでした。")
-
-    streamUrls = [
-        {
-            'url': url,
-            'resolution': stream.get("resolution")
-        }
-        for stream in adaptiveFormats
-        if stream.get('container') == 'webm' and stream.get('resolution') and validate_stream_url(stream.get("url"))
-    ]
-
     return [
         {
             'video_urls': list(reversed(valid_video_urls))[:2],
