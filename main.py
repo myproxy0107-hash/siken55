@@ -137,29 +137,6 @@ def getInfo(request):
 
 failed = "Load Failed"
 
-def validate_stream_url(url, timeout=(3.0, 0.5)):
-    """
-    指定した URL に対してリクエストを行い、
-    ・Content-Type ヘッダーに "video" が含まれているか
-    ・レスポンスの内容が空文字ではないか（しきい値以下なら不正と判断）
-    をチェックします。
-    """
-    try:
-        # GETやHEAD（内容を必要としない場合は HEAD でも可）で検証
-        response = requests.get(url, headers=getRandomUserAgent(), timeout=timeout)
-        content_type = response.headers.get("Content-Type", "")
-        if "video" not in content_type:
-            print(f"validate_stream_url: Content-Type 不正 {content_type}")
-            return False
-        # 短い動画データであれば、一般的に最低限のバイト数が返ってくるはず
-        if len(response.content) < 100:  # ここは適宜しきい値を設定（例: 100バイト未満なら不正）
-            print("validate_stream_url: コンテンツが極端に小さい")
-            return False
-        return True
-    except Exception as e:
-        print(f"validate_stream_url: 例外 {e}")
-        return False
-
 def getVideoData(videoid):
     t = json.loads(requestAPI(f"/videos/{urllib.parse.quote(videoid)}", invidious_api.video))
 
@@ -178,84 +155,68 @@ def getVideoData(videoid):
             "viewCountText": "Load Failed"
         }]
 
+    # 【新規追加】adaptiveFormats から高画質動画と音声の URL を抽出する
     adaptiveFormats = t.get("adaptiveFormats", [])
     highstream_url = None
     audio_url = None
 
-    # 高画質動画を検出する際、まず 1080p の stream を探す
+    # 高画質: container == 'webm' かつ resolution == '1080p' のストリーム
     for stream in adaptiveFormats:
         if stream.get("container") == "webm" and stream.get("resolution") == "1080p":
-            if validate_stream_url(stream.get("url")):
-                highstream_url = stream.get("url")
-                break
-            else:
-                print("1080p の streamURL は無効です。")
-    # もし 1080p でなければ 720p を試す
+            highstream_url = stream.get("url")
+            break
     if not highstream_url:
         for stream in adaptiveFormats:
             if stream.get("container") == "webm" and stream.get("resolution") == "720p":
-                if validate_stream_url(stream.get("url")):
-                    highstream_url = stream.get("url")
-                    break
-                else:
-                    print("720p の streamURL は無効です。")
-
-    # 音声用の stream の処理
-    for stream in adaptiveFormats:
-        if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
-            if validate_stream_url(stream.get("url")):
-                audio_url = stream.get("url")
+                highstream_url = stream.get("url")
                 break
 
-    # formatStreams の方でも、無効な URL を除外するアプローチ
-    valid_video_urls = []
-    for stream in t.get("formatStreams", []):
-        url = stream.get("url")
-        if url and validate_stream_url(url):
-            valid_video_urls.append(url)
 
-    if not valid_video_urls:
-        # もし利用可能な動画URLがなければタイムアウトと同様のエラー処理を行う
-        raise APITimeoutError("有効な動画ストリームが取得できませんでした。")
+    # 音声: container == 'm4a' かつ audioQuality == 'AUDIO_QUALITY_MEDIUM' のストリーム
+    for stream in adaptiveFormats:
+        if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
+            audio_url = stream.get("url")
+            break
 
+    adaptive = t.get('adaptiveFormats', [])
     streamUrls = [
         {
-            'url': url,
-            'resolution': stream.get("resolution")
+            'url': stream['url'],
+            'resolution': stream['resolution']
         }
-        for stream in adaptiveFormats
-        if stream.get('container') == 'webm' and stream.get('resolution') and validate_stream_url(stream.get("url"))
+        for stream in adaptive
+        if stream.get('container') == 'webm' and stream.get('resolution')
     ]
-
     return [
-        {
-            'video_urls': list(reversed(valid_video_urls))[:2],
-            'highstream_url': highstream_url,
-            'audio_url': audio_url,
-            'description_html': t["descriptionHtml"].replace("\n", "<br>"),
-            'title': t["title"],
-            'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"])),
-            'author_id': t["authorId"],
-            'author': t["author"],
-            'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
-            'view_count': t["viewCount"],
-            'like_count': t["likeCount"],
-            'subscribers_count': t["subCountText"],
-            'streamUrls': streamUrls
-        },
-        [
-          {
-            "video_id": i["videoId"],
-            "title": i["title"],
-            "author_id": i["authorId"],
-            "author": i["author"],
-            "length_text": str(datetime.timedelta(seconds=i["lengthSeconds"])),
-            "view_count_text": i["viewCountText"]
-        } for i in recommended_videos
-        ]
-    ]
+      {
+        # 既存処理（ここでは formatStreams のURLを逆順にして上位2件を使用）
+        'video_urls': list(reversed([i["url"] for i in t["formatStreams"]]))[:2],
+        # 追加：高画質動画と音声のURL
+        'highstream_url': highstream_url,
+        'audio_url': audio_url,
+        'description_html': t["descriptionHtml"].replace("\n", "<br>"),
+        'title': t["title"],
+        'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"])),
+        'author_id': t["authorId"],
+        'author': t["author"],
+        'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
+        'view_count': t["viewCount"],
+        'like_count': t["likeCount"],
+        'subscribers_count': t["subCountText"],
+        'streamUrls': streamUrls
+    },
 
-
+    [
+      {
+        "video_id": i["videoId"],
+        "title": i["title"],
+        "author_id": i["authorId"],
+        "author": i["author"],
+        "length_text": str(datetime.timedelta(seconds=i["lengthSeconds"])),
+        "view_count_text": i["viewCountText"]
+    } for i in recommended_videos]
+    
+]
 
 def getSearchData(q, page):
 
@@ -443,7 +404,6 @@ def video(v: str, response: Response, request: Request, yuki: Union[str, None] =
         "request": request,
         "videoid": v,
         "videourls": video_data[0]['video_urls'],
-       "valid_video_urls": video_data[0]['video_urls'],
         "description": video_data[0]['description_html'],
         "video_title": video_data[0]['title'],
         "author_id": video_data[0]['author_id'],
