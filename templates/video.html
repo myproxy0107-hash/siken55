@@ -320,9 +320,9 @@
               <div class="video-player-wrapper">
                 <!-- 動画プレーヤー -->
                 <video id="player" controls playsinline preload="none">
-                  {% for videourl in videourls %}
-                  <source class="player-source" src="{{ videourl }}">
-                  {% endfor %}
+             {% for url in valid_video_urls %}
+  <source class="player-source" src="{{ url }}">
+{% endfor %}
                 </video>
                 <!-- クルクルスピナー -->
                 <div id="loader"></div>
