@@ -185,7 +185,7 @@ def getVideoData(videoid):
     # 高画質動画を検出する際、まず 1080p の stream を探す
     for stream in adaptiveFormats:
         if stream.get("container") == "webm" and stream.get("resolution") == "1080p":
-            if validate_stream_url(stream.get("url")):
+            if stream.get(stream.get("url")):
                 highstream_url = stream.get("url")
                 break
             else:
@@ -194,7 +194,7 @@ def getVideoData(videoid):
     if not highstream_url:
         for stream in adaptiveFormats:
             if stream.get("container") == "webm" and stream.get("resolution") == "720p":
-                if validate_stream_url(stream.get("url")):
+                if stream.get(stream.get("url")):
                     highstream_url = stream.get("url")
                     break
                 else:
@@ -203,9 +203,11 @@ def getVideoData(videoid):
     # 音声用の stream の処理
     for stream in adaptiveFormats:
         if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
-            if validate_stream_url(stream.get("url")):
+            if stream.get(stream.get("url")):
                 audio_url = stream.get("url")
                 break
+
+  adaptive = t.get('adaptiveFormats', []) streamUrls = [ { 'url': stream['url'], 'resolution': stream['resolution'] } for stream in adaptive if stream.get('container') == 'webm' and stream.get('resolution') ]
 
     return [
         {
