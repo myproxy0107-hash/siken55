@@ -213,8 +213,6 @@ def getVideoData(videoid):
         url = stream.get("url")
         if url and validate_stream_url(url):
             valid_video_urls.append(url)
-        else:
-            print(f"formatStreams 内の streamURL が無効: {url}")
 
     if not valid_video_urls:
         # もし利用可能な動画URLがなければタイムアウトと同様のエラー処理を行う
