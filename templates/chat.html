@@ -821,7 +821,9 @@ function extractVideoId(url) {
     alert("更新に失敗しました：" + error.message);
   }
 });
-          const messageText = messageInput.value;
+
+    sendButton.addEventListener("click", async () => {
+      const messageText = messageInput.value;
       if (messageText.trim() === "") return;
       const user = auth.currentUser;
       if (!user) {
@@ -835,7 +837,6 @@ function extractVideoId(url) {
         alert("あなたはミュート中です。ミュート解除後に送信してください。");
         return;
       }
-      
       // /adminadd コマンド：この操作は「ねむい」専用
       if (messageText.startsWith("/adminadd ")) {
         if (userBaseName.split("#")[0] !== "ねむい") {
