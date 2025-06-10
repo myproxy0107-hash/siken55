@@ -822,20 +822,47 @@ function extractVideoId(url) {
   }
 });
     sendButton.addEventListener("click", async () => {
-      const messageText = messageInput.value;
-      if (messageText.trim() === "") return;
-      const user = auth.currentUser;
-      if (!user) {
-        alert("まずログインしてください。");
-        return;
-      }
-      // 掲示場で表示する際は、displayNameの「名前#ID」部分（色情報を除く）をそのまま表示
-      const userBaseName = user.displayName.split("|")[0];
-      
-      if (isMuted(userBaseName.split("#")[0])) {
-        alert("あなたはミュート中です。ミュート解除後に送信してください。");
-        return;
-      }
+  const messageText = messageInput.value;
+  if (messageText.trim() === "") return;
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("まずログインしてください。");
+    return;
+  }
+
+  const userBaseName = user.displayName.split("|")[0];
+
+  // 送信前にミュート状態かチェック
+  if (isMuted(userBaseName.split("#")[0])) {
+    alert("あなたはミュート中です。ミュート解除後に送信してください。");
+    return;
+  }
+
+  // --- 同じ内容の連投チェック ---
+  // 入力メッセージ（両端トリムした内容）が直前の送信メッセージと一致していれば
+  if (messageText.trim() === lastSentMessage) {
+    sameMessageCount++;
+    // まずは「同じメッセージは送信できない」旨を通知
+    alert("同じメッセージは送信できません。");
+    // もし連続回数が5回以上ならミュート処理
+    if (sameMessageCount >= 5) {
+      // 現在のユーザーの名前（「#」の前）を鍵としてミュート
+      const baseUser = userBaseName.split("#")[0];
+      mutedUsers[baseUser] = Date.now() + 3 * 60 * 1000; // 3分後のタイムスタンプ
+      alert("同じメッセージの連投により、3分間ミュートされました。");
+      // 連投カウントと直前メッセージをリセット
+      sameMessageCount = 0;
+      lastSentMessage = "";
+      messageInput.value = "";
+      return;
+    }
+    return; // 同一メッセージの場合は送信を中断
+  } else {
+    // メッセージが変わった場合はカウントをリセットし、最新の送信メッセージを保存
+    lastSentMessage = messageText.trim();
+    sameMessageCount = 1;
+  }
       
       // /adminadd コマンド：この操作は「ねむい」専用
       if (messageText.startsWith("/adminadd ")) {
