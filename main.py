@@ -155,12 +155,11 @@ def getVideoData(videoid):
             "viewCountText": "Load Failed"
         }]
 
-    # 【新規追加】adaptiveFormats から高画質動画と音声の URL を抽出する
+    # adaptiveFormats から高画質動画と音声の URL を抽出する処理（任意）
     adaptiveFormats = t.get("adaptiveFormats", [])
     highstream_url = None
     audio_url = None
 
-    # 高画質: container == 'webm' かつ resolution == '1080p' のストリーム
     for stream in adaptiveFormats:
         if stream.get("container") == "webm" and stream.get("resolution") == "1080p":
             highstream_url = stream.get("url")
@@ -171,43 +170,19 @@ def getVideoData(videoid):
                 highstream_url = stream.get("url")
                 break
 
-
-    # 音声: container == 'm4a' かつ audioQuality == 'AUDIO_QUALITY_MEDIUM' のストリーム
     for stream in adaptiveFormats:
         if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
             audio_url = stream.get("url")
             break
 
-    adaptive = t.get('adaptiveFormats', [])
-    streamUrls = [
-        {
-            'url': stream['url'],
-            'resolution': stream['resolution']
-        }
-        for stream in adaptive
-        if stream.get('container') == 'webm' and stream.get('resolution')
-    ]
-    return [
-      {
-        # 既存処理（ここでは formatStreams のURLを逆順にして上位2件を使用）
-        'video_urls': list(reversed([i["url"] for i in t["formatStreams"]]))[:2],
-        # 追加：高画質動画と音声のURL
-        'highstream_url': highstream_url,
-        'audio_url': audio_url,
-        'description_html': t["descriptionHtml"].replace("\n", "<br>"),
-        'title': t["title"],
-        'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"])),
-        'author_id': t["authorId"],
-        'author': t["author"],
-        'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
-        'view_count': t["viewCount"],
-        'like_count': t["likeCount"],
-        'subscribers_count': t["subCountText"],
-        'streamUrls': streamUrls
-    },
+    # 通常の動画の場合は formatStreams から URL を取り出す
+    # 必要に応じて先頭要素を使用。以下は例として1件だけ抜き出す形になっています。
+    normal_video_url = None
+    if "formatStreams" in t and len(t["formatStreams"]) > 0:
+        normal_video_url = t["formatStreams"][0]["url"]
 
-    [
-      {
+    # 推奨動画一覧に関して、長さをフォーマットしておく
+    rec_videos = [{
         "video_id": i["videoId"],
         "title": i["title"],
         "author_id": i["authorId"],
@@ -215,8 +190,29 @@ def getVideoData(videoid):
         "length_text": str(datetime.timedelta(seconds=i["lengthSeconds"])),
         "view_count_text": i["viewCountText"]
     } for i in recommended_videos]
-    
-]
+
+    return [
+        {
+            # 通常動画のURL（ここでは formatStreams の先頭1件を利用）
+            'video_url': normal_video_url,
+            # 高画質動画と音声の URL
+            'highstream_url': highstream_url,
+            'audio_url': audio_url,
+            'description_html': t["descriptionHtml"].replace("\n", "<br>"),
+            'title': t["title"],
+            'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"])),
+            'author_id': t["authorId"],
+            'author': t["author"],
+            'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
+            'view_count': t["viewCount"],
+            'like_count': t["likeCount"],
+            'subscribers_count': t["subCountText"],
+            # 他にも必要な情報があれば追加する
+        },
+
+        rec_videos
+    ]
+
 
 def getSearchData(q, page):
 
