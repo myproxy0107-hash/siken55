@@ -399,7 +399,7 @@ def video(v: str, response: Response, request: Request, yuki: Union[str, None] =
     return template('video.html', {
         "request": request,
         "videoid": v,
-        "videourls": video_data[0]['video_urls'],
+        "videourls": video_data[0]['normal_video_url'],
         "description": video_data[0]['description_html'],
         "video_title": video_data[0]['title'],
         "author_id": video_data[0]['author_id'],
