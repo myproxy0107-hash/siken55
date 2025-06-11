@@ -317,17 +317,40 @@
           <!-- 左カラム：動画プレーヤーとその下に動画説明、コメント -->
           <div class="video-left">
             <div class="video-player-container">
-              <div class="video-player-wrapper">
-                <!-- 動画プレーヤー -->
-                <video id="player" controls playsinline preload="none">
-                    {% for videourl in videourls %}
-                  <source class="player-source" src="{{ videourl }}">
-                  {% endfor %}
-                </video>
-                <!-- クルクルスピナー -->
-                <div id="loader"></div>
-              </div>
-            </div>
+  <div id="defaultPlayer" class="video-player-wrapper">
+    <video id="player" controls playsinline preload="none">
+      {% for videourl in videourls %}
+        <source class="player-source" src="{{ videourl }}">
+      {% endfor %}
+    </video>
+    <div id="loader"></div>
+  </div>
+  <div id="embeddedPlayer" class="umev" style="display: none;">
+    <iframe width="100%" height="100%" 
+            src="https://www.youtube-nocookie.com/embed/{{ videoid }}" 
+            title="video player" frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            allowfullscreen>
+    </iframe>
+  </div>
+</div>
+
+<script>
+  // 切り替え用の関数
+  function togglePlayer(isEmbedded) {
+    const defaultPlayer = document.getElementById("defaultPlayer");
+    const embeddedPlayer = document.getElementById("embeddedPlayer");
+    if (isEmbedded) {
+      defaultPlayer.style.display = "none";
+      embeddedPlayer.style.display = "block";
+    } else {
+      defaultPlayer.style.display = "block";
+      embeddedPlayer.style.display = "none";
+    }
+  }
+</script>
+
             <!-- 動画の説明 -->
             <div class="video-description" id="descriptionText">
               <a href="/channel/{{ author_id }}" style="display: inline-block; width: fit-content; width: -moz-fit-content">
