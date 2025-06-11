@@ -6,43 +6,44 @@ import datetime
 import random
 import os
 import subprocess
-from cache import cache
 import ast
+from cache import cache
 
-# 3 => (3.0, 1.5) => (1.5, 1)
+# API待機時間およびタイムアウト設定
 max_api_wait_time = (1.5, 1)
-# 10 => 10
 max_time = 10
 
 user_agents = [
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3864.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:62.0) Gecko/20100101 Firefox/62.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:67.0) Gecko/20100101 Firefox/67.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:68.0) Gecko/20100101 Firefox/68.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36 Edg/94.0.992.31',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1'
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3864.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:62.0) Gecko/20100101 Firefox/62.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:67.0) Gecko/20100101 Firefox/67.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:68.0) Gecko/20100101 Firefox/68.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36 Edg/94.0.992.31',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1'
 ]
 
 def getRandomUserAgent():
-  user_agent = user_agents[random.randint(0, len(user_agents) - 1)]
-  print(user_agent)
-  return {
-    'User-Agent': user_agent
-  }
+    user_agent = user_agents[random.randint(0, len(user_agents) - 1)]
+    print(user_agent)
+    return {'User-Agent': user_agent}
 
 class InvidiousAPI:
     def __init__(self):
-        self.all = ast.literal_eval(requests.get('https://github.com/Aaa97a/siken55/raw/refs/heads/main/API.html', headers=getRandomUserAgent(), timeout=(1.0, 0.5)).text)
+        # GitHub上にある Invidious API エンドポイント一覧を取得
+        self.all = ast.literal_eval(requests.get(
+            'https://github.com/Aaa97a/siken55/raw/refs/heads/main/API.html',
+            headers=getRandomUserAgent(), timeout=(1.0, 0.5)
+        ).text)
         
         self.video = self.all['video']
         self.playlist = self.all['playlist']
@@ -58,15 +59,17 @@ class InvidiousAPI:
             'checkVideo': self.check_video
         }
 
-        
 invidious_api = InvidiousAPI()
 
-url = requests.get('https://raw.githubusercontent.com/LunaKamituki/Yuki-BBS-Server-URL/refs/heads/main/server.txt', headers=getRandomUserAgent()).text.rstrip()
+url = requests.get(
+    'https://raw.githubusercontent.com/LunaKamituki/Yuki-BBS-Server-URL/refs/heads/main/server.txt', 
+    headers=getRandomUserAgent()
+).text.rstrip()
 
 version = "1.0"
 new_instance_version = "1.3.2"
 
-
+# 権限付与処理
 os.system("chmod 777 ./yukiverify")
 
 class APITimeoutError(Exception):
@@ -79,31 +82,33 @@ def isJSON(json_str):
     try:
         json.loads(json_str)
         return True
-    except json.JSONDecodeError as jde:
-        pass
-    return False
+    except json.JSONDecodeError:
+        return False
 
-def updateList(list, str):
-    list.append(str)
-    list.remove(str)
-    return list
+def updateList(lst, item):
+    lst.append(item)
+    lst.remove(item)
+    return lst
 
 def requestAPI(path, api_urls):
     starttime = time.time()
     
     for api in api_urls:
-        if  time.time() - starttime >= max_time - 1:
+        if time.time() - starttime >= max_time - 1:
             break
             
         try:
-            print(api + 'api/v1' + path)
-            res = requests.get(api + 'api/v1' + path, headers=getRandomUserAgent(), timeout=max_api_wait_time)
+            full_url = api + 'api/v1' + path
+            print(full_url)
+            res = requests.get(full_url, headers=getRandomUserAgent(), timeout=max_api_wait_time)
             if res.status_code == requests.codes.ok and isJSON(res.text):
-                
                 if invidious_api.check_video and path.startswith('/video/'):
                     # 動画の有無をチェックする場合
-                    video_res = requests.get(json.loads(res.text)['formatStreams'][0]['url'], headers=getRandomUserAgent(), timeout=(3.0, 0.5))
-                    if not 'video' in video_res.headers['Content-Type']:
+                    video_res = requests.get(
+                        json.loads(res.text)['formatStreams'][0]['url'],
+                        headers=getRandomUserAgent(), timeout=(3.0, 0.5)
+                    )
+                    if 'video' not in video_res.headers['Content-Type']:
                         print(f"No Video(True)({video_res.headers['Content-Type']}): {api}")
                         updateList(api_urls, api)
                         continue
@@ -117,19 +122,91 @@ def requestAPI(path, api_urls):
                 return res.text
 
             elif isJSON(res.text):
-                # ステータスコードが200ではないかつ内容がJSON形式の場合
+                # ステータスコードが200ではないが、内容がJSON形式の場合
                 print(f"Returned Err0r(JSON): {api} ('{json.loads(res.text)['error'].replace('error', 'err0r')}')")
                 updateList(api_urls, api)
             else:
                 # ステータスコードが200ではないかつ内容がJSON形式ではない場合
                 print(f"Returned Err0r: {api} ('{res.text[:100]}')")
                 updateList(api_urls, api)
-        except:
+        except Exception as e:
             # 例外等が発生した場合
-            print(f"Err0r: {api}")
+            print(f"Err0r: {api} ({str(e)})")
             updateList(api_urls, api)
     
     raise APITimeoutError("APIがタイムアウトしました")
+
+def getVideoData(videoid):
+    t = json.loads(requestAPI(f"/videos/{urllib.parse.quote(videoid)}", invidious_api.video))
+
+    # 推奨動画情報の整形（キー名の違いに対応）
+    if 'recommendedvideo' in t:
+        recommended_videos = t["recommendedvideo"]
+    elif 'recommendedVideos' in t:
+        recommended_videos = t["recommendedVideos"]
+    else:
+        recommended_videos = [{
+            "videoId": "Load Failed",
+            "title": "Load Failed",
+            "authorId": "Load Failed",
+            "author": "Load Failed",
+            "lengthSeconds": 0,
+            "viewCountText": "Load Failed"
+        }]
+
+    # adaptiveFormats から高画質動画と音声の URL を抽出する（任意の処理）
+    adaptiveFormats = t.get("adaptiveFormats", [])
+    highstream_url = None
+    audio_url = None
+
+    for stream in adaptiveFormats:
+        if stream.get("container") == "webm" and stream.get("resolution") == "1080p":
+            highstream_url = stream.get("url")
+            break
+    if not highstream_url:
+        for stream in adaptiveFormats:
+            if stream.get("container") == "webm" and stream.get("resolution") == "720p":
+                highstream_url = stream.get("url")
+                break
+
+    for stream in adaptiveFormats:
+        if stream.get("container") == "m4a" and stream.get("audioQuality") == "AUDIO_QUALITY_MEDIUM":
+            audio_url = stream.get("url")
+            break
+
+    # 通常の動画の場合は formatStreams から URL を取り出す
+    normal_video_url = None
+    if "formatStreams" in t and len(t["formatStreams"]) > 0:
+        normal_video_url = t["formatStreams"][0]["url"]
+
+    # 推奨動画一覧の整形
+    rec_videos = [{
+        "video_id": i["videoId"],
+        "title": i["title"],
+        "author_id": i["authorId"],
+        "author": i["author"],
+        "length_text": str(datetime.timedelta(seconds=i["lengthSeconds"])),
+        "view_count_text": i["viewCountText"]
+    } for i in recommended_videos]
+
+    return [
+        {
+            # 従来の使い方を維持するため normal_video_url をキーとして設定
+            'normal_video_url': normal_video_url,
+            'highstream_url': highstream_url,
+            'audio_url': audio_url,
+            'description_html': t["descriptionHtml"].replace("\n", "<br>"),
+            'title': t["title"],
+            'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"])),
+            'author_id': t["authorId"],
+            'author': t["author"],
+            'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
+            'view_count': t["viewCount"],
+            'like_count': t["likeCount"],
+            'subscribers_count': t["subCountText"],
+        },
+        rec_videos
+    ]
 
 
 def getInfo(request):
