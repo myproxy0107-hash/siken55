@@ -412,6 +412,74 @@
     </div>
 
     <!-- 動画ロード中スピナー・再読み込みボタン用のJS -->
+	  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    // グローバル変数：埋め込みプレイヤー（YouTube）と再生時刻の管理用
+    var ytPlayer; 
+    var currentTime = 0;
+
+    // YouTube IFrame API の初期化コールバック
+    function onYouTubeIframeAPIReady() {
+      ytPlayer = new YT.Player('yt-player', {
+        videoId: '{{ videoid }}',  // テンプレート変数や実際の動画IDに置き換えてください
+        playerVars: {
+          'autoplay': 0,
+          'controls': 1,
+          'start': 0,
+          'origin': window.location.origin
+        },
+        events: {
+          'onReady': onPlayerReady
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      // ここで特に処理はしないが、
+      // 後で togglePlayer() 内で seekTo を呼び出し、再生位置の調整を行います。
+    }
+
+    /**
+     * togglePlayer(isEmbedded)
+     * isEmbedded が true のときは埋め込みプレイヤーに切り替え、
+     * false のときは HTML5 Video のデフォルトプレイヤーに切り替えます。
+     * 切り替え時は再生位置（currentTime）を両者で同期させます。
+     */
+    function togglePlayer(isEmbedded) {
+      const defaultPlayerWrapper = document.getElementById("defaultPlayer");
+      const videoElement = document.getElementById("player");
+      const embeddedPlayerContainer = document.getElementById("embeddedPlayer");
+
+      if (isEmbedded) {
+        // 【デフォルトから埋め込みへ切替】
+        // 現在の再生位置を保存（HTML5 Video 側）
+        currentTime = videoElement.currentTime;
+
+        // YouTube プレイヤーが準備できていれば、seekTo で再生位置を設定
+        if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+          ytPlayer.seekTo(Math.floor(currentTime), true);
+        }
+        // HTML5 Video を一時停止し、画面から隠す
+        videoElement.pause();
+        defaultPlayerWrapper.style.display = "none";
+        // 埋め込みプレイヤーを表示
+        embeddedPlayerContainer.style.display = "block";
+      } else {
+        // 【埋め込みからデフォルトへ切替】
+        // 埋め込みプレイヤー側から現在の再生位置を取得
+        if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+          currentTime = ytPlayer.getCurrentTime();
+        }
+        // default の video 要素に再生位置を反映させる
+        videoElement.currentTime = currentTime;
+        // 再生を再開（※必要に応じて pause 状態で留めることも可能）
+        videoElement.play();
+        // デフォルトプレイヤーを表示し、埋め込みプレイヤーを隠す
+        defaultPlayerWrapper.style.display = "block";
+        embeddedPlayerContainer.style.display = "none";
+      }
+    }
+  </script>
     <script>
   const video = document.getElementById("player");
   const loader = document.getElementById("loader");
