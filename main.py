@@ -147,15 +147,15 @@ def getVideoData(videoid):
         recommended_videos = t["recommendedVideos"]
     else:
         recommended_videos = [{
-            "videoId": failed,
-            "title": failed,
-            "authorId": failed,
-            "author": failed,
+            "videoId": "Load Failed",
+            "title": "Load Failed",
+            "authorId": "Load Failed",
+            "author": "Load Failed",
             "lengthSeconds": 0,
             "viewCountText": "Load Failed"
         }]
 
-    # adaptiveFormats から高画質動画と音声の URL を抽出する処理（任意）
+    # adaptiveFormats から高画質動画と音声の URL を抽出する（任意の処理）
     adaptiveFormats = t.get("adaptiveFormats", [])
     highstream_url = None
     audio_url = None
@@ -175,13 +175,12 @@ def getVideoData(videoid):
             audio_url = stream.get("url")
             break
 
-    # 通常の動画の場合は formatStreams から URL を取り出す
-    # 必要に応じて先頭要素を使用。以下は例として1件だけ抜き出す形になっています。
+    # 通常動画の場合は formatStreams から URL を取り出す
     normal_video_url = None
     if "formatStreams" in t and len(t["formatStreams"]) > 0:
         normal_video_url = t["formatStreams"][0]["url"]
 
-    # 推奨動画一覧に関して、長さをフォーマットしておく
+    # 推奨動画一覧の整形
     rec_videos = [{
         "video_id": i["videoId"],
         "title": i["title"],
@@ -193,9 +192,8 @@ def getVideoData(videoid):
 
     return [
         {
-            # 通常動画のURL（ここでは formatStreams の先頭1件を利用）
-            'video_url': normal_video_url,
-            # 高画質動画と音声の URL
+            # 従来の使い方を維持するため、キー名を normal_video_url としている
+            'normal_video_url': normal_video_url,
             'highstream_url': highstream_url,
             'audio_url': audio_url,
             'description_html': t["descriptionHtml"].replace("\n", "<br>"),
@@ -207,9 +205,7 @@ def getVideoData(videoid):
             'view_count': t["viewCount"],
             'like_count': t["likeCount"],
             'subscribers_count': t["subCountText"],
-            # 他にも必要な情報があれば追加する
         },
-
         rec_videos
     ]
 
