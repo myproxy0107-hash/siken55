@@ -180,26 +180,55 @@
           margin-top: 16px;
         }
       }
-      /* サイドバー用スタイル */
-      #sidebar {
+     /* トップバー */
+      #top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #ffffff;
+        height: 56px;
+        padding: 0 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+      }
+      /* トップバー左側：ハンバーガー＆ロゴ */
+      #top-bar .left-section {
+        display: flex;
+        align-items: center;
+      }
+      #open-sidebar {
+        font-size: 30px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #007bff;
+      }
+      /* 検索フォーム・ナビゲーションなど、その他のトップバー要素はそのまま */
+
+      /* サイドバー */
+      #sidebar {
+        position: fixed;
+        top: 56px; /* トップバー分下げる */
         left: -100%;
         width: 80%;
         max-width: 300px;
-        height: 100%;
+        height: calc(100% - 56px); /* 画面全体の高さからトップバー分を除く */
         background-color: #000;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
         overflow-y: auto;
         transition: left 0.3s ease;
         z-index: 1100;
+        color: #fff;
       }
       #sidebar.active {
         left: 0;
       }
       #sidebar .sidebar-content {
         padding: 20px;
-        color: #fff;
       }
       #sidebar a {
         display: block;
@@ -207,45 +236,29 @@
         color: #fff;
         text-decoration: none;
       }
-      #sidebar label {
-        display: block;
-        margin-bottom: 10px;
-        font-size: 14px;
-        color: #fff;
-      }
-      #close-sidebar {
+      #sidebar button#close-sidebar {
         background: none;
         border: none;
         font-size: 24px;
+        color: #fff;
         position: absolute;
         top: 10px;
         right: 10px;
         cursor: pointer;
-        color: #fff;
       }
-      /* ハンバーガー（サイドバーを開くボタン） */
-      #open-sidebar {
-        top: 70px;
-        right: 15px;
-        font-size: 30px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        z-index: 999;
-        color: #007bff;
-      }
+
       /* オーバーレイ */
       #overlay {
         position: fixed;
-        top: 0;
+        top: 56px; /* トップバーの下から開始 */
         left: 0;
         width: 100%;
-        height: 100%;
+        height: calc(100% - 56px);
         background: rgba(0, 0, 0, 0.4);
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease;
-        z-index: 900;
+        z-index: 1000;
       }
       #overlay.active {
         opacity: 1;
@@ -268,49 +281,51 @@
   </head>
   
   <body>
+
+ <!-- トップバー -->
     <header id="top-bar">
-      <div class="navbar-logo">
-        <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
+      <div class="left-section">
+        <button id="open-sidebar">☰</button>
+        <div class="navbar-logo">
+          <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
+        </div>
       </div>
-      <div class="search-container">
+     <div class="search-container">
         <form class="pure-form" action="/search" method="get">
           <fieldset>
             <input id="searchbox" name="q" type="search" placeholder="検索" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false">
           </fieldset>
         </form>
       </div>
-      <!-- ナビゲーション -->
       <nav id="top-nav">
         <a href="/bbs">掲示板</a>
         <a href="/proxypage">Proxy</a>
         <a href="/others">その他</a>
         <a href="/sitsumon">回答よろ</a>
-        &emsp;
       </nav>
     </header>
 
-    <button id="open-sidebar">☰</button>
     <!-- サイドバー -->
     <div id="sidebar">
       <button id="close-sidebar">×</button>
       <div class="sidebar-content">
         <a href="{{ videourls[0] }}" download="{{ video_title }}">ダウンロード</a>
-        <a href="javascript:location.replace('/watch?v={{ videoid }}')">デフォルトで視聴する</a>
-        <a href="javascript:location.replace('/ume?v={{ videoid }}')">埋め込み(nocookie)で視聴する</a>
-        <a href="javascript:location.replace('/w?v={{ videoid }}')">高画質で視聴する</a>
+        <a href="javascript:location.replace('/watch?v={{ videoid}}')">デフォルトで視聴する</a>
         <a href="javascript:location.replace('/history')">履歴を閲覧</a>
-          <label for="autonextpage">
-            自動で次の動画に遷移
-            <input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)">
-          </label>
-          <label for="loop">
-            ループ再生
-            <input id="loop" type="checkbox" onchange="changeLoop(this)">
-          </label>
-        </div>
+        <label for="autonextpage">
+          自動で次の動画に遷移
+          <input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)">
+        </label>
+        <label for="loop">
+          ループ再生
+          <input id="loop" type="checkbox" onchange="changeLoop(this)">
+        </label>
       </div>
     </div>
+
+    <!-- オーバーレイ -->
     <div id="overlay"></div>
+
 	<div class="no-theme">
 <main class="main-content">
     <div class="video-container">
