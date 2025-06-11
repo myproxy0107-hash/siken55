@@ -230,7 +230,7 @@
         border: none;
         cursor: pointer;
         z-index: 999;
-        color: #00000;
+        color: #007bff;
       }
       /* オーバーレイ */
       #overlay {
@@ -267,7 +267,27 @@
   
   <body>
     <header id="top-bar">
-	    <button id="open-sidebar">☰</button>
+      <div class="navbar-logo">
+        <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
+      </div>
+      <div class="search-container">
+        <form class="pure-form" action="/search" method="get">
+          <fieldset>
+            <input id="searchbox" name="q" type="search" placeholder="検索" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false">
+          </fieldset>
+        </form>
+      </div>
+      <!-- ナビゲーション -->
+      <nav id="top-nav">
+        <a href="/bbs">掲示板</a>
+        <a href="/proxypage">Proxy</a>
+        <a href="/others">その他</a>
+        <a href="/sitsumon">回答よろ</a>
+        &emsp;
+      </nav>
+    </header>
+
+    <button id="open-sidebar">☰</button>
     <!-- サイドバー -->
     <div id="sidebar">
       <button id="close-sidebar">×</button>
@@ -289,26 +309,6 @@
       </div>
     </div>
     <div id="overlay"></div>
-
-      <div class="navbar-logo">
-        <a href="/"><img src="/img/logo/th.png" alt="Logo"></a>
-      </div>
-      <div class="search-container">
-        <form class="pure-form" action="/search" method="get">
-          <fieldset>
-            <input id="searchbox" name="q" type="search" placeholder="検索" title="検索" autocomplete="on" autocorrect="on" autocapitalize="none" spellcheck="false">
-          </fieldset>
-        </form>
-      </div>
-      <!-- ナビゲーション -->
-      <nav id="top-nav">
-        <a href="/bbs">掲示板</a>
-        <a href="/proxypage">Proxy</a>
-        <a href="/others">その他</a>
-        <a href="/sitsumon">回答よろ</a>
-        &emsp;
-      </nav>
-    </header>
 
     <div class="no-theme">
       <!-- メインコンテンツ -->
