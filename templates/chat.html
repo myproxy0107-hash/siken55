@@ -897,7 +897,51 @@ function extractVideoId(url) {
       }
 
 
-      
+ if (messageText.startsWith("/mute ")) {
+  // 発信者が「ねむい」でなければ実行不可
+  if (userBaseName.split("#")[0] !== "ねむい") {
+    alert("この操作は権限がありません。");
+    return;
+  }
+  // コマンドの引数チェック：/mute [ユーザー名] [期間]
+  const parts = messageText.split(" ");
+  if (parts.length < 3) {
+    alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
+    return;
+  }
+  const targetName = parts[1].trim();
+  const durationStr = parts[2].trim(); // 例: "10m"
+  
+  // 数字部分の抽出
+  const durationValue = parseInt(durationStr);
+  if (isNaN(durationValue)) {
+    alert("有効な数字を指定してください。");
+    return;
+  }
+  // 末尾の文字から単位を判断
+  const unit = durationStr.slice(-1);
+  let multiplier;
+  if (unit === "s") {
+    multiplier = 1000;       // 秒
+  } else if (unit === "m") {
+    multiplier = 60000;      // 分
+  } else if (unit === "h") {
+    multiplier = 3600000;    // 時間
+  } else if (unit === "d") {
+    multiplier = 86400000;   // 日
+  } else {
+    alert("有効な期間単位を指定してください。（s, m, h, d）");
+    return;
+  }
+  const muteDuration = durationValue * multiplier;
+  
+  // mutedUsers オブジェクトにターゲットのミュート終了時刻を設定
+  mutedUsers[targetName] = Date.now() + muteDuration;
+  alert("ユーザー " + targetName + " を " + durationStr + " の間ミュートしました。");
+  messageInput.value = "";
+  return;
+}
+     
       // 以下、/delete, /color, /mute, /unmute, … の各コマンド
 if (messageText.startsWith("/you ")) {
     const parts = messageText.split(" ");
