@@ -312,6 +312,35 @@
 .action-menu div:hover {
   background-color: #eee;
 }
+        /* 【追加】アクションメニュー用のスタイルは元のコードと同様 */
+    .action-menu-button {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 5px 8px;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+    .action-menu {
+      position: absolute;
+      right: 5px;
+      top: 30px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    .action-menu div {
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .action-menu div:hover { background-color: #eee; }
 
   </style>
 </head>
@@ -361,6 +390,8 @@
     
     <textarea id="messageInput" placeholder="メッセージを入力"></textarea>
     <button id="sendButton">送信</button>
+    <input type="file" id="imageInput" accept="image/*" style="display:block; margin: 10px 0;">
+    
     <button id="logoutButton">ログアウト</button>
     <a href="javascript:location.replace('https://google.com')">緊急ボタン</a>
     
@@ -456,8 +487,7 @@
       onDisconnect,
       set,
       serverTimestamp,
-      onValue,
-      remove
+      onValue
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     
     
@@ -479,32 +509,11 @@
     const db = getFirestore(appFB);
     const dbRT = getDatabase(appFB);
     
-    
-  // グローバル変数
-  const MAX_MESSAGES = 50;
-  let pseudoAdmins = new Set();
-  // mutedUsers を今回は単純なフラグ管理に変更：キーにユーザー名、value が true ならミュート状態
-  let mutedUsers = {}; 
-  let bannedIPs = new Set(); // ban されたIP を保持
-  let userIPs = {};        // ユーザー名ごとのIPを保持 (例: { "taro": "123.45.67.89", ... })
-  let myIP = "";
+    const MAX_MESSAGES = 50;
+    let pseudoAdmins = new Set();
+    let mutedUsers = {};
 // たとえば "currentTopic" ノードにアクセスする場合
 const currentTopicRef = ref(dbRT, "currentTopic");
-     const bannedIPsRef = ref(dbRT, "bannedIPs");
-
-  // ※ bannedIPs ノードの変更をリアルタイムで反映し、かつ自分のチャット入力欄も制御する
-  onValue(bannedIPsRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    bannedIPs = new Set(Object.keys(data));  // DB のキー（IPアドレス）をセットにする
-    if (bannedIPs.has(myIP)) {
-      // ban 対象の場合はチャット入力欄を無効にする
-      messageInput.disabled = true;
-      console.log("あなたのIPは ban されています。");
-      // ※必要なら alert() なども可能
-    } else {
-      messageInput.disabled = false;
-    }
-  });
 
 // データ書き込み: ノードが存在しない場合、set() によって自動作成されます
 async function updateCurrentTopic(topicText) {
@@ -515,6 +524,18 @@ async function updateCurrentTopic(topicText) {
     console.error("currentTopic 更新エラー:", error);
   }
 }
+
+// リアルタイム監視: "currentTopic" の値が更新されるとこの onValue のコールバックが呼ばれる
+onValue(currentTopicRef, (snapshot) => {
+  const topic = snapshot.val();
+  const topicElem = document.getElementById("current-topic");
+  if (topic) {
+    topicElem.textContent = topic;
+    topicElem.style.display = "block";
+  } else {
+    topicElem.style.display = "none";
+  }
+});
 
     
   // 例：既存の extractVideoId 関数（なければ下記を利用）
@@ -527,7 +548,6 @@ function extractVideoId(url) {
     function generateEmailFromName(name) {
       return name.trim().toLowerCase().replace(/\s+/g, "") + "@chatapp.local";
     }
-    // 強制IDはサインアップ時に一度生成される
     function generateForcedId() {
       return Math.floor(1000 + Math.random() * 9000).toString();
     }
@@ -540,10 +560,10 @@ function extractVideoId(url) {
     const sendButton   = document.getElementById("sendButton");
     const chatBox      = document.getElementById("chat-box");
     const messageInput = document.getElementById("messageInput");
-    // プロフィール更新用ボタン
     const updateProfileButton = document.getElementById("updateProfileButton");
+    
+    // 【追加】編集モーダルのopenEditModal関数（従来通り）
     function openEditModal(currentText, callback) {
-      // overlay の生成
       const overlay = document.createElement('div');
       overlay.style.position = 'fixed';
       overlay.style.top = '0';
@@ -556,7 +576,6 @@ function extractVideoId(url) {
       overlay.style.justifyContent = 'center';
       overlay.style.zIndex = '2000';
       
-      // モーダルコンテナ
       const modal = document.createElement('div');
       modal.style.backgroundColor = '#fff';
       modal.style.padding = '20px';
@@ -565,24 +584,20 @@ function extractVideoId(url) {
       modal.style.maxWidth = '500px';
       modal.style.width = '90%';
       
-      // タイトル
       const title = document.createElement('h3');
       title.innerText = 'メッセージ編集';
       modal.appendChild(title);
       
-      // textarea：改行を保持
       const textarea = document.createElement('textarea');
       textarea.style.width = '100%';
       textarea.style.height = '150px';
       textarea.value = currentText;
       modal.appendChild(textarea);
       
-      // ボタンコンテナ
       const btnContainer = document.createElement('div');
       btnContainer.style.marginTop = '10px';
       btnContainer.style.textAlign = 'right';
       
-      // 保存ボタン
       const saveBtn = document.createElement('button');
       saveBtn.innerText = '保存';
       saveBtn.style.marginRight = '10px';
@@ -592,12 +607,9 @@ function extractVideoId(url) {
       };
       btnContainer.appendChild(saveBtn);
       
-      // キャンセルボタン
       const cancelBtn = document.createElement('button');
       cancelBtn.innerText = 'キャンセル';
-      cancelBtn.onclick = () => {
-        document.body.removeChild(overlay);
-      };
+      cancelBtn.onclick = () => { document.body.removeChild(overlay); };
       btnContainer.appendChild(cancelBtn);
       
       modal.appendChild(btnContainer);
@@ -687,35 +699,16 @@ function extractVideoId(url) {
       }
     });
     
-      // onAuthStateChanged 内で、ユーザーサインイン時に自動で IP を取得し、userIPs に登録
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      document.getElementById("user-auth").style.display = "none";
-      document.getElementById("chat-section").style.display = "block";
-      // setupPresence() なども呼び出し…
-      // ipify を使って自分の IP を取得
-      fetch("https://api.ipify.org?format=json")
-        .then((response) => response.json())
-        .then((data) => {
-          myIP = data.ip;
-          console.log("自分のIP:", myIP);
-          // ユーザー名は displayName の「名前」部分から抽出する
-          const username = user.displayName.split("|")[0].split("#")[0];
-          userIPs[username] = myIP;
-          console.log(`ユーザー ${username} のIPを登録:`, myIP);
-        })
-        .catch((error) => console.error("IP取得エラー:", error));
-      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 200);
-    } else {
-      document.getElementById("user-auth").style.display = "block";
-      document.getElementById("chat-section").style.display = "none";
+    function isMuted(userBaseName) {
+      if (mutedUsers[userBaseName]) {
+        if (Date.now() < mutedUsers[userBaseName]) {
+          return true;
+        } else {
+          delete mutedUsers[userBaseName];
+        }
+      }
+      return false;
     }
-  });
-
-  // ミュート状態の確認（今回は単純なフラグチェック）
-  function isMuted(userBaseName) {
-    return mutedUsers[userBaseName] === true;
-  }
     
     const fortuneOptions = [
       { name: "…あれ？……何故か表示されません…", weight: 1 },
@@ -850,37 +843,51 @@ function extractVideoId(url) {
     alert("更新に失敗しました：" + error.message);
   }
 });
-
-  // isMuted 関数（時間指定仕様）
-  function isMuted(userBaseName) {
-    if (mutedUsers[userBaseName]) {
-      if (Date.now() < mutedUsers[userBaseName]) {
-        return true;
-      } else {
-        delete mutedUsers[userBaseName];
+     // ★ メッセージ送信（テキスト or 画像付き）のイベント処理 ★
+    sendButton.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("まずログインしてください。");
+        return;
       }
-    }
-    return false;
-  }
-
-  // チャット送信処理
-  sendButton.addEventListener("click", async () => {
-    if (bannedIPs.has(myIP)) {
-      alert("あなたのIPは ban されています。チャット送信はできません。");
-      return;
-    }
-    const messageText = messageInput.value;
-    if (messageText.trim() === "") return;
-    const user = auth.currentUser;
-    if (!user) {
-      alert("まずログインしてください。");
-      return;
-    }
-    const userBaseName = user.displayName.split("|")[0];
-    if (isMuted(userBaseName.split("#")[0])) {
-      alert("あなたはミュート中です。ミュート解除後に送信してください。");
-      return;
-    }
+      
+      // 【追加】画像送信用のinput要素からファイルを取得
+      const imageInputElem = document.getElementById("imageInput");  // 追加箇所
+      const imageFile = imageInputElem.files[0];                       // 追加箇所
+      
+      const messageText = messageInput.value.trim();
+      const userBaseName = user.displayName.split("|")[0];
+      
+      // ミュートチェック（従来通り）
+      if (isMuted(userBaseName.split("#")[0])) {
+        alert("あなたはミュート中です。ミュート解除後に送信してください。");
+        return;
+      }
+      
+      // 【追加】画像が選択されていれば、画像付きメッセージとして送信する処理
+      if (imageFile) {
+        const fileName = new Date().getTime() + "_" + imageFile.name;
+        const imagePath = `chat_images/${fileName}`;  // Storage上の保存先
+        const imgRef = storageRef(storage, imagePath);
+        try {
+          await uploadBytes(imgRef, imageFile);      // 画像ファイルをStorageにアップロード
+          const downloadURL = await getDownloadURL(imgRef);  // ダウンロードURLを取得
+          // チャットメッセージに画像URL・画像パス・キャプション（テキスト入力値）を登録
+          await addDoc(collection(db, "chat"), {
+            imageUrl: downloadURL,      // 【追加】画像表示用URL
+            imagePath: imagePath,       // 【追加】後でStorageから削除するためのパス
+            caption: messageText,       // 【追加】テキスト入力をキャプションとして登録（画像メッセージの場合）
+            name: user.displayName || "名無し",
+            uid: user.uid,
+            timestamp: new Date()
+          });
+          imageInputElem.value = ""; // 【追加】画像選択欄のクリア
+          messageInput.value = "";
+        } catch (error) {
+          alert("画像送信エラー: " + error.message);
+        }
+        return; // 画像送信の場合、以降のテキストメッセージ処理をスキップ
+      }
       
       // /adminadd コマンド：この操作は「ねむい」専用
       if (messageText.startsWith("/adminadd ")) {
@@ -942,126 +949,7 @@ function extractVideoId(url) {
       }
 
 
- if (messageText.startsWith("/mute ")) {
-      if (userBaseName.split("#")[0] !== "ねむい") {
-        alert("この操作は権限がありません。");
-        return;
-      }
-      const parts = messageText.split(" ");
-      if (parts.length < 3) {
-        alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
-        return;
-      }
-      const targetName = parts[1].trim();
-      const durationStr = parts[2].trim(); // 例: "10m"
-      const durationValue = parseInt(durationStr);
-      if (isNaN(durationValue)) {
-        alert("有効な数字を指定してください。");
-        return;
-      }
-      const unit = durationStr.slice(-1);
-      let multiplier;
-      if (unit === "s") {
-        multiplier = 1000;       // 秒
-      } else if (unit === "m") {
-        multiplier = 60000;      // 分
-      } else if (unit === "h") {
-        multiplier = 3600000;    // 時間
-      } else if (unit === "d") {
-        multiplier = 86400000;   // 日
-      } else {
-        alert("有効な期間単位を指定してください。（s, m, h, d）");
-        return;
-      }
-      const muteDuration = durationValue * multiplier;
-      const muteEndTime = Date.now() + muteDuration;
-      mutedUsers[targetName] = muteEndTime;
-      alert("ユーザー「" + targetName + "」を " + durationStr + " 間ミュートしました。");
-      messageInput.value = "";
-      return;
-    }
-
-    // ★ /unmute コマンド ★
-    if (messageText.startsWith("/unmute ")) {
-      if (userBaseName.split("#")[0] !== "ねむい") {
-        alert("この操作は権限がありません。");
-        return;
-      }
-      const parts = messageText.split(" ");
-      if (parts.length < 2) {
-        alert("使い方: /unmute [ユーザー名]");
-        return;
-      }
-      const targetName = parts[1].trim();
-      if (mutedUsers[targetName]) {
-        delete mutedUsers[targetName];
-        alert("ユーザー「" + targetName + "」のミュートを解除しました。");
-      } else {
-        alert("ユーザー「" + targetName + "」はミュートされていません。");
-      }
-      messageInput.value = "";
-      return;
-    }
-    
-    // ★ /ban コマンド ★（即時発動：DB更新により全クライアントで反映）
-    if (messageText.startsWith("/ban ")) {
-      if (userBaseName.split("#")[0] !== "ねむい") {
-        alert("この操作は権限がありません。");
-        return;
-      }
-      const parts = messageText.split(" ");
-      if (parts.length < 2) {
-        alert("使い方: /ban [ユーザー名]");
-        return;
-      }
-      const targetName = parts[1].trim();
-      if (userIPs[targetName]) {
-        const targetIP = userIPs[targetName];
-        // Firebase Realtime DB にて ban 対象としてセット（この更新で全クライアントに反映）
-        set(ref(dbRT, "bannedIPs/" + targetIP), true)
-          .then(() => {
-            alert("ユーザー「" + targetName + "」のIP (" + targetIP + ") を ban しました。");
-          })
-          .catch((err) => {
-            alert("ban 更新エラー: " + err.message);
-          });
-      } else {
-        alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
-      }
-      messageInput.value = "";
-      return;
-    }
-    
-    // ★ /reban コマンド ★
-    if (messageText.startsWith("/reban ")) {
-      if (userBaseName.split("#")[0] !== "ねむい") {
-        alert("この操作は権限がありません。");
-        return;
-      }
-      const parts = messageText.split(" ");
-      if (parts.length < 2) {
-        alert("使い方: /reban [ユーザー名]");
-        return;
-      }
-      const targetName = parts[1].trim();
-      if (userIPs[targetName]) {
-        const targetIP = userIPs[targetName];
-        remove(ref(dbRT, "bannedIPs/" + targetIP))
-          .then(() => {
-            alert("ユーザー「" + targetName + "」のIP ban を解除しました。");
-          })
-          .catch((err) => {
-            alert("ban解除エラー: " + err.message);
-          });
-      } else {
-        alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
-      }
-      messageInput.value = "";
-      return;
-    }
-    
-
-     
+      
       // 以下、/delete, /color, /mute, /unmute, … の各コマンド
 if (messageText.startsWith("/you ")) {
     const parts = messageText.split(" ");
@@ -1094,7 +982,7 @@ if (messageText.startsWith("/you ")) {
 
 
       
-      if (messageText.startsWith("/delete ")) {
+            if (messageText.startsWith("/delete ")) {
         if (userBaseName.split("#")[0] === "ねむい" || pseudoAdmins.has(userBaseName.split("#")[0])) {
           const parts = messageText.split(" ");
           if (parts.length < 2) {
@@ -1108,13 +996,31 @@ if (messageText.startsWith("/you ")) {
             snapshot.forEach(async (docSnap) => {
               const msg = docSnap.data();
               if (msg.name) {
-  // displayName は "名前#ID|…" の形式として保存されているので、パイプ(|)で区切り、
-  // 先頭の「名前#ID」から「#」の前の部分を取得して比較する
-  const baseName = msg.name.split("|")[0].split("#")[0];
-  if (baseName === targetName) {
-    await deleteDoc(docSnap.ref);
-  }
-}
+                const baseName = msg.name.split("|")[0].split("#")[0];
+                if (baseName === targetName) {
+                  // 【追加】画像付きメッセージの場合、Storage上の画像も削除
+                  if (msg.imagePath) {
+                    try {
+                      await deleteObject(storageRef(storage, msg.imagePath));
+                    } catch(err) {
+                      console.error("画像削除エラー:", err);
+                    }
+                  }
+                  await deleteDoc(docSnap.ref);
+                }
+              }
+            });
+            console.log(`ユーザー「${targetName}」のメッセージを削除しました。`);
+          } catch (error) {
+            alert("メッセージ削除エラー: " + error.message);
+          }
+          messageInput.value = "";
+          return;
+        } else {
+          alert("この操作は権限がありません。");
+          return;
+        }
+      }
 
             });
             console.log(`ユーザー「${targetName}」のメッセージを削除しました。`);
@@ -1129,13 +1035,23 @@ if (messageText.startsWith("/you ")) {
         }
       }
       
-      if (messageText === CLEAR_CHAT_PASSWORD) {
+            if (messageText === CLEAR_CHAT_PASSWORD) {
         if (userBaseName.split("#")[0] === "ねむい" || pseudoAdmins.has(userBaseName.split("#")[0])) {
           try {
             const chatCollection = collection(db, "chat");
             const snapshot = await getDocs(chatCollection);
-            for (const docSnap of snapshot.docs) {
-              await deleteDoc(docSnap.ref);
+            const deleteCount = snapshot.docs.length - MAX_MESSAGES;
+            for (let i = 0; i < deleteCount; i++) {
+              const msgData = snapshot.docs[i].data();
+              // 【追加】画像付きメッセージの場合、Storage上の画像も削除
+              if (msgData.imagePath) {
+                try {
+                  await deleteObject(storageRef(storage, msgData.imagePath));
+                } catch(err) {
+                  console.error("画像削除エラー:", err);
+                }
+              }
+              await deleteDoc(snapshot.docs[i].ref);
             }
             chatBox.innerHTML = "";
             console.log("全ての発言を削除しました。");
@@ -1192,69 +1108,6 @@ if (messageText.startsWith("/topic ")) {
   messageInput.value = "";
   return;
 }
-      // ★ /mutestatus コマンド ★
-if (messageText.startsWith("/mutestatus ")) {
-  // 「ねむい」専用
-  if (userBaseName.split("#")[0] !== "ねむい") {
-    alert("この操作は権限がありません。");
-    return;
-  }
-  // コマンド形式のチェック：/mutestatus [ユーザー名]
-  const parts = messageText.split(" ");
-  if (parts.length < 2) {
-    alert("使い方: /mutestatus [ユーザー名]");
-    return;
-  }
-  const targetName = parts[1].trim();
-  // mutedUsers オブジェクトに対象ユーザーがあれば、残り時間を計算
-  if (mutedUsers[targetName]) {
-    const remainingMillis = mutedUsers[targetName] - Date.now();
-    if (remainingMillis > 0) {
-      const seconds = Math.floor(remainingMillis / 1000) % 60;
-      const minutes = Math.floor(remainingMillis / (1000 * 60)) % 60;
-      const hours = Math.floor(remainingMillis / (1000 * 60 * 60));
-      let remainingStr = "";
-      if (hours > 0) { remainingStr += hours + "時間"; }
-      if (minutes > 0) { remainingStr += minutes + "分"; }
-      remainingStr += seconds + "秒";
-      alert("ユーザー " + targetName + " は " + remainingStr + " 後にミュート解除されます。");
-    } else {
-      // 経過している場合はオブジェクトから削除
-      delete mutedUsers[targetName];
-      alert("ユーザー " + targetName + " は現在ミュートされていません。");
-    }
-  } else {
-    alert("ユーザー " + targetName + " は現在ミュートされていません。");
-  }
-  messageInput.value = "";
-  return;
-}
-
-// ★ /unmute コマンド ★
-if (messageText.startsWith("/unmute ")) {
-  // 「ねむい」専用
-  if (userBaseName.split("#")[0] !== "ねむい") {
-    alert("この操作は権限がありません。");
-    return;
-  }
-  // コマンド形式のチェック：/unmute [ユーザー名]
-  const parts = messageText.split(" ");
-  if (parts.length < 2) {
-    alert("使い方: /unmute [ユーザー名]");
-    return;
-  }
-  const targetName = parts[1].trim();
-  // mutedUsers オブジェクトに対象が存在すれば削除
-  if (mutedUsers[targetName]) {
-    delete mutedUsers[targetName];
-    alert("ユーザー " + targetName + " のミュートを解除しました。");
-  } else {
-    alert("ユーザー " + targetName + " は現在ミュートされていません。");
-  }
-  messageInput.value = "";
-  return;
-}
-
 
 
 
@@ -1428,9 +1281,7 @@ if (messageText.startsWith("/news")) {
       messageInput.value = "";
       return;
     }
-      
-      
-      // 通常メッセージ送信
+// 【従来通り】通常のテキストメッセージ送信処理
       try {
         await addDoc(collection(db, "chat"), {
           text: messageText,
@@ -1453,11 +1304,21 @@ if (messageText.startsWith("/news")) {
       }
     });
     
+    // チャット内容の表示＆古いメッセージの自動削除（従来通り＋【追加】画像に関する処理）
     const chatQuery = query(collection(db, "chat"), orderBy("timestamp", "asc"));
     onSnapshot(chatQuery, async (snapshot) => {
       if (snapshot.docs.length > MAX_MESSAGES) {
         const deleteCount = snapshot.docs.length - MAX_MESSAGES;
         for (let i = 0; i < deleteCount; i++) {
+          const msgData = snapshot.docs[i].data();
+          // 【追加】画像付きメッセージの場合、Storage上の画像も削除
+          if (msgData.imagePath) {
+            try {
+              await deleteObject(storageRef(storage, msgData.imagePath));
+            } catch(err) {
+              console.error("画像削除エラー:", err);
+            }
+          }
           try {
             await deleteDoc(snapshot.docs[i].ref);
           } catch (err) {
@@ -1466,207 +1327,197 @@ if (messageText.startsWith("/news")) {
         }
       }
       chatBox.innerHTML = "";
-// 既存の snapshot.forEach 内で各メッセージの HTML を生成する部分
-snapshot.forEach((doc) => {
-  const msg = doc.data();
-  
-  // メッセージコンテナを生成（スタイル上、位置相対にしておく）
-  const messageContainer = document.createElement("div");
-  messageContainer.className = "message-container";
-  messageContainer.style.position = "relative"; // 後で絶対配置するアクションメニュー用
-  
-const nameDiv = document.createElement("div");
-    nameDiv.className = "message-name";
-    let displayName = msg.name || "名無し";
-    const parts = displayName.split("|");
-    const namePart = parts[0]; // 例: "taro#1234"
-    const colorCode = parts[1] || "";
-    const customText = parts[2] || "";
-    const nameSpan = document.createElement("span");
-    const actualName = namePart.split("#")[0]; // 「名前」部分のみ抽出
-
-    if (actualName === "ねむい") {
-      nameSpan.textContent = namePart;
-      nameSpan.style.color = "black";
-    } else {
-      // ミュート状態なら、表示名に "|muter" を付与
-      if (isMuted(actualName)) {
-        nameSpan.textContent = actualName + "|muter";
-      } else {
-        nameSpan.textContent = namePart;
-      }
-      if (pseudoAdmins.has(actualName)) {
-        nameSpan.textContent += " (擬似管理者)";
-      }
-      if (colorCode) {
-        nameSpan.style.color = colorCode;
-      }
-    }
-
-// ※ 自己紹介文（カスタムテキスト）は常に灰色で表示
-if (customText) {
-  const customSpan = document.createElement("span");
-  customSpan.textContent = customText;
-  customSpan.style.color = "gray";
-  customSpan.style.fontSize = "0.8em";
-  customSpan.style.marginLeft = "4px";
-  nameSpan.appendChild(customSpan);
-}
-
-
-nameDiv.appendChild(nameSpan);
-messageContainer.appendChild(nameDiv);
-
-  
-  // ----- ここから「アクションメニュー」の実装 -----
-  const currentUser = auth.currentUser;
-  
-  // メニュー用のハンバーガーアイコンボタン（3本線のアイコン）
-  const actionMenuButton = document.createElement("button");
-  actionMenuButton.className = "action-menu-button";
-  actionMenuButton.innerHTML = "&#9776;"; // ハンバーガーアイコン
-  // メッセージコンテナ右上に表示されるよう、上記CSSで absolute 配置
-  
-  // アクションメニューの本体（初期状態は非表示）
-  const actionMenu = document.createElement("div");
-  actionMenu.className = "action-menu";
-  actionMenu.style.display = "none";
-  
-  // 自分のメッセージの場合は「削除」と「編集」を追加
-  if (currentUser && msg.uid === currentUser.uid) {
-    // 削除オプション
-    const deleteOption = document.createElement("div");
-    deleteOption.textContent = "削除";
-    deleteOption.addEventListener("click", async function(e) {
-      e.stopPropagation();  // クリックのバブリング防止
-      if (confirm("このメッセージを削除してよろしいですか？")) {
-        try {
-          await deleteDoc(doc.ref);
-        } catch (err) {
-          console.error("メッセージ削除エラー:", err);
-        }
-      }
-      actionMenu.style.display = "none"; // 操作後はメニューを閉じる
-    });
-    actionMenu.appendChild(deleteOption);
-    
-    // 編集オプション
-    const editOption = document.createElement("div");
-    editOption.textContent = "編集";
-    editOption.addEventListener("click", function(e) {
-      e.stopPropagation();
-      openEditModal(msg.text, async (newText) => {
-        if (newText && newText.trim() !== "" && newText !== msg.text) {
-          try {
-            await updateDoc(doc.ref, {
-              text: newText,
-              edited: true,
-              editedAt: new Date()
-            });
-          } catch (error) {
-            alert("メッセージ更新エラー: " + error.message);
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "message-container";
+        messageContainer.style.position = "relative";
+        
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "message-name";
+        let displayName = msg.name || "名無し";
+        const parts = displayName.split("|");
+        const namePart = parts[0];
+        const colorCode = parts[1] || "";
+        const customText = parts[2] || "";
+        
+        const nameSpan = document.createElement("span");
+        const actualName = namePart.split("#")[0];
+        if (actualName === "ねむい") {
+          nameSpan.textContent = namePart;
+          nameSpan.style.color = "black";
+        } else {
+          nameSpan.textContent = namePart;
+          if (pseudoAdmins.has(actualName)) {
+            nameSpan.textContent += " (擬似管理者)";
+          }
+          if (colorCode) {
+            nameSpan.style.color = colorCode;
           }
         }
-      });
-      actionMenu.style.display = "none";
-    });
-    actionMenu.appendChild(editOption);
-  }
-  
-  // どのメッセージでも利用できる「返信」オプション
-  const replyOption = document.createElement("div");
-  replyOption.textContent = "返信";
-  replyOption.addEventListener("click", function(e) {
-    e.stopPropagation();
-    let lines = msg.text.split("\n");
-    if (lines.length && lines[0].trim().startsWith(">")) {
-      lines.shift();
-    }
-    if (lines.length === 1) {
-      messageInput.value = `> ${msg.name}: ${lines[0]}\n` + messageInput.value;
-    } else {
-      let quotedText = lines.map(line => "> " + line).join("\n");
-      messageInput.value = `> ${msg.name}:\n` + quotedText + "\n" + messageInput.value;
-    }
-    messageInput.focus();
-    actionMenu.style.display = "none";
-  });
-  actionMenu.appendChild(replyOption);
-  
-  // メニューをトグル：ハンバーガーボタンをクリックすると表示／非表示を切り替える
-  actionMenuButton.addEventListener("click", function(e) {
-    e.stopPropagation();
-    actionMenu.style.display = (actionMenu.style.display === "none") ? "block" : "none";
-  });
-  
-  // メッセージコンテナにハンバーガーボタンとアクションメニューを追加
-  messageContainer.appendChild(actionMenuButton);
-  messageContainer.appendChild(actionMenu);
-  
-  // ドキュメント上のどこかをクリックしたらアクションメニューを閉じる
-  document.addEventListener("click", function() {
-    actionMenu.style.display = "none";
-  });
-  // ----- ここまでがアクションメニューの実装 -----
-  
-  // ----- 以下、メッセージ本文やタイムスタンプの既存処理 -----
-  const textDiv = document.createElement("div");
-  textDiv.className = "message-text";
-  // (ここは /you コマンドの処理や自動リンク化の既存処理をそのまま適用)
-  const linesArr = msg.text.split("\n");
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  linesArr.forEach((line) => {
-    const lineDiv = document.createElement("div");
-    if (line.trim().startsWith(">")) {
-      lineDiv.className = "quote";
-    }
-    if (urlRegex.test(line)) {
-      const parts = line.split(urlRegex);
-      parts.forEach((part) => {
-        if (urlRegex.test(part)) {
-          const anchor = document.createElement("a");
-          anchor.href = part;
-          anchor.textContent = part;
-          anchor.target = "_blank";
-          anchor.rel = "noopener noreferrer";
-          lineDiv.appendChild(anchor);
-        } else {
-          lineDiv.appendChild(document.createTextNode(part));
+        if (customText) {
+          const customSpan = document.createElement("span");
+          customSpan.textContent = customText;
+          customSpan.style.color = "gray";
+          customSpan.style.fontSize = "0.8em";
+          customSpan.style.marginLeft = "4px";
+          nameSpan.appendChild(customSpan);
         }
+        nameDiv.appendChild(nameSpan);
+        messageContainer.appendChild(nameDiv);
+        
+        // アクションメニュー（従来通りの処理）
+        const currentUser = auth.currentUser;
+        const actionMenuButton = document.createElement("button");
+        actionMenuButton.className = "action-menu-button";
+        actionMenuButton.innerHTML = "&#9776;";
+        const actionMenu = document.createElement("div");
+        actionMenu.className = "action-menu";
+        actionMenu.style.display = "none";
+    
+        if (currentUser && msg.uid === currentUser.uid) {
+          const deleteOption = document.createElement("div");
+          deleteOption.textContent = "削除";
+          deleteOption.addEventListener("click", async function(e) {
+            e.stopPropagation();
+            if (confirm("このメッセージを削除してよろしいですか？")) {
+              try {
+                // 【追加】画像付きの場合、Storage上の画像も削除
+                if (msg.imagePath) {
+                  await deleteObject(storageRef(storage, msg.imagePath));
+                }
+                await deleteDoc(doc.ref);
+              } catch (err) {
+                console.error("メッセージ削除エラー:", err);
+              }
+            }
+            actionMenu.style.display = "none";
+          });
+          actionMenu.appendChild(deleteOption);
+          
+          const editOption = document.createElement("div");
+          editOption.textContent = "編集";
+          editOption.addEventListener("click", function(e) {
+            e.stopPropagation();
+            openEditModal(msg.text, async (newText) => {
+              if (newText && newText.trim() !== "" && newText !== msg.text) {
+                try {
+                  await updateDoc(doc.ref, {
+                    text: newText,
+                    edited: true,
+                    editedAt: new Date()
+                  });
+                } catch (error) {
+                  alert("メッセージ更新エラー: " + error.message);
+                }
+              }
+            });
+            actionMenu.style.display = "none";
+          });
+          actionMenu.appendChild(editOption);
+        }
+    
+        const replyOption = document.createElement("div");
+        replyOption.textContent = "返信";
+        replyOption.addEventListener("click", function(e) {
+          e.stopPropagation();
+          let lines = msg.text.split("\n");
+          if (lines.length && lines[0].trim().startsWith(">")) {
+            lines.shift();
+          }
+          if (lines.length === 1) {
+            messageInput.value = `> ${msg.name}: ${lines[0]}\n` + messageInput.value;
+          } else {
+            let quotedText = lines.map(line => "> " + line).join("\n");
+            messageInput.value = `> ${msg.name}:\n` + quotedText + "\n" + messageInput.value;
+          }
+          messageInput.focus();
+          actionMenu.style.display = "none";
+        });
+        actionMenu.appendChild(replyOption);
+    
+        actionMenuButton.addEventListener("click", function(e) {
+          e.stopPropagation();
+          actionMenu.style.display = (actionMenu.style.display === "none") ? "block" : "none";
+        });
+    
+        messageContainer.appendChild(actionMenuButton);
+        messageContainer.appendChild(actionMenu);
+    
+        document.addEventListener("click", function() {
+          actionMenu.style.display = "none";
+        });
+    
+        // 【追加】画像付きメッセージの場合の表示
+        if (msg.imageUrl) {
+          const imgElem = document.createElement("img");
+          imgElem.src = msg.imageUrl;
+          imgElem.style.maxWidth = "100%";
+          imgElem.style.borderRadius = "8px";
+          imgElem.style.margin = "10px 0";
+          messageContainer.appendChild(imgElem);
+          if (msg.caption) {  // キャプションがあれば表示
+            const captionDiv = document.createElement("div");
+            captionDiv.textContent = msg.caption;
+            captionDiv.style.fontStyle = "italic";
+            captionDiv.style.marginTop = "5px";
+            messageContainer.appendChild(captionDiv);
+          }
+        } else {
+          // 【従来通り】テキストメッセージの場合の処理
+          const textDiv = document.createElement("div");
+          textDiv.className = "message-text";
+          const linesArr = msg.text ? msg.text.split("\n") : [];
+          const urlRegex = /(https?:\/\/[^\s]+)/g;
+          linesArr.forEach((line) => {
+            const lineDiv = document.createElement("div");
+            if (line.trim().startsWith(">")) { lineDiv.className = "quote"; }
+            if (urlRegex.test(line)) {
+              const parts = line.split(urlRegex);
+              parts.forEach((part) => {
+                if (urlRegex.test(part)) {
+                  const anchor = document.createElement("a");
+                  anchor.href = part;
+                  anchor.textContent = part;
+                  anchor.target = "_blank";
+                  anchor.rel = "noopener noreferrer";
+                  lineDiv.appendChild(anchor);
+                } else {
+                  lineDiv.appendChild(document.createTextNode(part));
+                }
+              });
+            } else {
+              lineDiv.textContent = line;
+            }
+            textDiv.appendChild(lineDiv);
+          });
+          messageContainer.appendChild(textDiv);
+        }
+    
+        if (msg.timestamp) {
+          let dateObj;
+          if (typeof msg.timestamp.toDate === "function") {
+            dateObj = msg.timestamp.toDate();
+          } else {
+            dateObj = new Date(msg.timestamp);
+          }
+          const timeDiv = document.createElement("div");
+          timeDiv.className = "message-time";
+          timeDiv.textContent = dateObj.toLocaleString();
+          if (msg.edited) {
+            const editedSpan = document.createElement("span");
+            editedSpan.style.fontSize = "0.7em";
+            editedSpan.style.color = "gray";
+            editedSpan.style.marginLeft = "5px";
+            editedSpan.textContent = " (編集済み)";
+            timeDiv.appendChild(editedSpan);
+          }
+          messageContainer.appendChild(timeDiv);
+        }
+    
+        chatBox.appendChild(messageContainer);
       });
-    } else {
-      lineDiv.textContent = line;
-    }
-    textDiv.appendChild(lineDiv);
-  });
-  messageContainer.appendChild(textDiv);
-  
-  if (msg.timestamp) {
-    let dateObj;
-    if (typeof msg.timestamp.toDate === "function") {
-      dateObj = msg.timestamp.toDate();
-    } else {
-      dateObj = new Date(msg.timestamp);
-    }
-    const timeDiv = document.createElement("div");
-    timeDiv.className = "message-time";
-    timeDiv.textContent = dateObj.toLocaleString();
-    if (msg.edited) {
-      const editedSpan = document.createElement("span");
-      editedSpan.style.fontSize = "0.7em";
-      editedSpan.style.color = "gray";
-      editedSpan.style.marginLeft = "5px";
-      editedSpan.textContent = " (編集済み)";
-      timeDiv.appendChild(editedSpan);
-    }
-    messageContainer.appendChild(timeDiv);
-  }
-  
-  chatBox.appendChild(messageContainer);
-});
-chatBox.scrollTop = chatBox.scrollHeight;
-
-
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
   </script>
 </body>
