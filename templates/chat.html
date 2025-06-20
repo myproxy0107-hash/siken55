@@ -478,9 +478,29 @@
     const db = getFirestore(appFB);
     const dbRT = getDatabase(appFB);
     
-    const MAX_MESSAGES = 50;
-    let pseudoAdmins = new Set();
-    let mutedUsers = {};
+    <!-- Firebase & チャット機能の実装 -->
+<script type="module">
+  // Firebase モジュールのインポート等（省略、これまでのコードと同じ）
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, deleteDoc, getDocs, updateDoc, onSnapshot, query, orderBy, getDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+  import { getDatabase, ref, onDisconnect, set, serverTimestamp, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+  // Firebase 設定＆初期化
+  const firebaseConfig = { /* （これまでの設定内容） */ };
+  const appFB = initializeApp(firebaseConfig);
+  const auth = getAuth(appFB);
+  const db = getFirestore(appFB);
+  const dbRT = getDatabase(appFB);
+
+  // グローバル変数
+  const MAX_MESSAGES = 50;
+  let pseudoAdmins = new Set();
+  // mutedUsers を今回は単純なフラグ管理に変更：キーにユーザー名、value が true ならミュート状態
+  let mutedUsers = {}; 
+  let bannedIPs = new Set(); // ban されたIP を保持
+  let userIPs = {};        // ユーザー名ごとのIPを保持 (例: { "taro": "123.45.67.89", ... })
+  let myIP = "";
 // たとえば "currentTopic" ノードにアクセスする場合
 const currentTopicRef = ref(dbRT, "currentTopic");
 
@@ -677,16 +697,33 @@ function extractVideoId(url) {
       }
     });
     
-    function isMuted(userBaseName) {
-      if (mutedUsers[userBaseName]) {
-        if (Date.now() < mutedUsers[userBaseName]) {
-          return true;
-        } else {
-          delete mutedUsers[userBaseName];
-        }
-      }
-      return false;
+    onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById("user-auth").style.display = "none";
+      document.getElementById("chat-section").style.display = "block";
+      setupPresence(user);
+      // ipify を利用して自分のIPを取得し、グローバル変数に登録。さらにユーザー名をキーに登録
+      fetch("https://api.ipify.org?format=json")
+        .then((response) => response.json())
+        .then((data) => {
+          myIP = data.ip;
+          console.log("自分のIP:", myIP);
+          const username = user.displayName.split("|")[0].split("#")[0];
+          userIPs[username] = myIP;
+          console.log(`ユーザー ${username} のIPを登録:`, myIP);
+        })
+        .catch((error) => console.error("IP取得エラー:", error));
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 200);
+    } else {
+      document.getElementById("user-auth").style.display = "block";
+      document.getElementById("chat-section").style.display = "none";
     }
+  });
+
+  // ミュート状態の確認（今回は単純なフラグチェック）
+  function isMuted(userBaseName) {
+    return mutedUsers[userBaseName] === true;
+  }
     
     const fortuneOptions = [
       { name: "…あれ？……何故か表示されません…", weight: 1 },
@@ -821,21 +858,25 @@ function extractVideoId(url) {
     alert("更新に失敗しました：" + error.message);
   }
 });
-    sendButton.addEventListener("click", async () => {
-      const messageText = messageInput.value;
-      if (messageText.trim() === "") return;
-      const user = auth.currentUser;
-      if (!user) {
-        alert("まずログインしてください。");
-        return;
-      }
-      // 掲示場で表示する際は、displayNameの「名前#ID」部分（色情報を除く）をそのまま表示
-      const userBaseName = user.displayName.split("|")[0];
-      
-      if (isMuted(userBaseName.split("#")[0])) {
-        alert("あなたはミュート中です。ミュート解除後に送信してください。");
-        return;
-      }
+     // チャット送信処理（sendButton のクリックイベント）
+  sendButton.addEventListener("click", async () => {
+    // 送信前に自分のIPがbanされていないかチェック
+    if (bannedIPs.has(myIP)) {
+      alert("あなたのIPは ban されています。チャット送信はできません。");
+      return;
+    }
+    const messageText = messageInput.value;
+    if (messageText.trim() === "") return;
+    const user = auth.currentUser;
+    if (!user) {
+      alert("まずログインしてください。");
+      return;
+    }
+    const userBaseName = user.displayName.split("|")[0];
+    if (isMuted(userBaseName.split("#")[0])) {
+      alert("あなたはミュート中です。ミュート解除後に送信してください。");
+      return;
+    }
       
       // /adminadd コマンド：この操作は「ねむい」専用
       if (messageText.startsWith("/adminadd ")) {
@@ -898,50 +939,66 @@ function extractVideoId(url) {
 
 
  if (messageText.startsWith("/mute ")) {
-  // 発信者が「ねむい」でなければ実行不可
-  if (userBaseName.split("#")[0] !== "ねむい") {
-    alert("この操作は権限がありません。");
+    if (userBaseName.split("#")[0] !== "ねむい") {
+      alert("この操作は権限がありません。");
+      return;
+    }
+    const parts = messageText.split(" ");
+    if (parts.length < 3) {
+      alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
+      return;
+    }
+    const targetName = parts[1].trim();
+    const durationStr = parts[2].trim(); // 例えば "10m"
+    const durationValue = parseInt(durationStr);
+    if (isNaN(durationValue)) {
+      alert("有効な数字を指定してください。");
+      return;
+    }
+    const unit = durationStr.slice(-1);
+    let multiplier;
+    if (unit === "s") {
+      multiplier = 1000; // 秒
+    } else if (unit === "m") {
+      multiplier = 60000; // 分
+    } else if (unit === "h") {
+      multiplier = 3600000; // 時間
+    } else if (unit === "d") {
+      multiplier = 86400000; // 日
+    } else {
+      alert("有効な期間単位を指定してください。（s, m, h, d）");
+      return;
+    }
+    // 保存するのはミュート終了時刻（現在の時刻に指定時間を加算）
+    const muteDuration = durationValue * multiplier;
+    const muteEndTime = Date.now() + muteDuration;
+    mutedUsers[targetName] = muteEndTime;
+    alert("ユーザー「" + targetName + "」を " + durationStr + " 間ミュートしました。");
+    messageInput.value = "";
     return;
   }
-  // コマンドの引数チェック：/mute [ユーザー名] [期間]
-  const parts = messageText.split(" ");
-  if (parts.length < 3) {
-    alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
-    return;
-  }
-  const targetName = parts[1].trim();
-  const durationStr = parts[2].trim(); // 例: "10m"
-  
-  // 数字部分の抽出
-  const durationValue = parseInt(durationStr);
-  if (isNaN(durationValue)) {
-    alert("有効な数字を指定してください。");
-    return;
-  }
-  // 末尾の文字から単位を判断
-  const unit = durationStr.slice(-1);
-  let multiplier;
-  if (unit === "s") {
-    multiplier = 1000;       // 秒
-  } else if (unit === "m") {
-    multiplier = 60000;      // 分
-  } else if (unit === "h") {
-    multiplier = 3600000;    // 時間
-  } else if (unit === "d") {
-    multiplier = 86400000;   // 日
-  } else {
-    alert("有効な期間単位を指定してください。（s, m, h, d）");
-    return;
-  }
-  const muteDuration = durationValue * multiplier;
-  
-  // mutedUsers オブジェクトにターゲットのミュート終了時刻を設定
-  mutedUsers[targetName] = Date.now() + muteDuration;
-  alert("ユーザー " + targetName + " を " + durationStr + " の間ミュートしました。");
-  messageInput.value = "";
-  return;
-}
 
+  // ★ /unmute コマンド ★（既存の解除処理）
+  if (messageText.startsWith("/unmute ")) {
+    if (userBaseName.split("#")[0] !== "ねむい") {
+      alert("この操作は権限がありません。");
+      return;
+    }
+    const parts = messageText.split(" ");
+    if (parts.length < 2) {
+      alert("使い方: /unmute [ユーザー名]");
+      return;
+    }
+    const targetName = parts[1].trim();
+    if (mutedUsers[targetName]) {
+      delete mutedUsers[targetName];
+      alert("ユーザー「" + targetName + "」のミュートを解除しました。");
+    } else {
+      alert("ユーザー「" + targetName + "」はミュートされていません。");
+    }
+    messageInput.value = "";
+    return;
+  }
   // ★ /mutestatus コマンド ★
 if (messageText.startsWith("/mutestatus ")) {
   // 「ねむい」専用
@@ -973,31 +1030,6 @@ if (messageText.startsWith("/mutestatus ")) {
       delete mutedUsers[targetName];
       alert("ユーザー " + targetName + " は現在ミュートされていません。");
     }
-  } else {
-    alert("ユーザー " + targetName + " は現在ミュートされていません。");
-  }
-  messageInput.value = "";
-  return;
-}
-
-// ★ /unmute コマンド ★
-if (messageText.startsWith("/remute ")) {
-  // 「ねむい」専用
-  if (userBaseName.split("#")[0] !== "ねむい") {
-    alert("この操作は権限がありません。");
-    return;
-  }
-  // コマンド形式のチェック：/unmute [ユーザー名]
-  const parts = messageText.split(" ");
-  if (parts.length < 2) {
-    alert("使い方: /unmute [ユーザー名]");
-    return;
-  }
-  const targetName = parts[1].trim();
-  // mutedUsers オブジェクトに対象が存在すれば削除
-  if (mutedUsers[targetName]) {
-    delete mutedUsers[targetName];
-    alert("ユーザー " + targetName + " のミュートを解除しました。");
   } else {
     alert("ユーザー " + targetName + " は現在ミュートされていません。");
   }
@@ -1372,6 +1404,54 @@ if (messageText.startsWith("/news")) {
       messageInput.value = "";
       return;
     }
+        // /ban コマンド：指定ユーザー名から userIPs マッピングを参照して ban を実行
+        if (messageText.startsWith("/ban ")) {
+          if (userBaseName.split("#")[0] !== "ねむい") {
+            alert("この操作は権限がありません。");
+            return;
+          }
+          const parts = messageText.split(" ");
+          if (parts.length < 2) {
+            alert("使い方: /ban [ユーザー名]");
+            return;
+          }
+          const targetName = parts[1].trim();
+          if (userIPs[targetName]) {
+            const targetIP = userIPs[targetName];
+            bannedIPs.add(targetIP);
+            alert("ユーザー「" + targetName + "」のIP (" + targetIP + ") を ban しました。");
+          } else {
+            alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
+          }
+          messageInput.value = "";
+          return;
+        }
+        // /reban コマンド：指定ユーザー名の ban を解除
+        if (messageText.startsWith("/reban ")) {
+          if (userBaseName.split("#")[0] !== "ねむい") {
+            alert("この操作は権限がありません。");
+            return;
+          }
+          const parts = messageText.split(" ");
+          if (parts.length < 2) {
+            alert("使い方: /reban [ユーザー名]");
+            return;
+          }
+          const targetName = parts[1].trim();
+          if (userIPs[targetName]) {
+            const targetIP = userIPs[targetName];
+            if (bannedIPs.has(targetIP)) {
+              bannedIPs.delete(targetIP);
+              alert("ユーザー「" + targetName + "」のIP ban を解除しました。");
+            } else {
+              alert("ユーザー「" + targetName + "」は ban 状態ではありません。");
+            }
+          } else {
+            alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
+          }
+          messageInput.value = "";
+          return;
+        }
 
       
       // 通常メッセージ送信
@@ -1419,33 +1499,33 @@ snapshot.forEach((doc) => {
   messageContainer.className = "message-container";
   messageContainer.style.position = "relative"; // 後で絶対配置するアクションメニュー用
   
-  /// ----- 送信者名の表示等（既存コードの変更部分） -----
 const nameDiv = document.createElement("div");
-nameDiv.className = "message-name";
-let displayName = msg.name || "名無し";
-// displayName をパイプ("｜")区切りで分割し、各情報を取得する
-const parts = displayName.split("|");
-const namePart = parts[0]; // "名前#ID"部分（/delete等の処理で利用）
-const colorCode = parts[1] || "";
-const customText = parts[2] || "";
+    nameDiv.className = "message-name";
+    let displayName = msg.name || "名無し";
+    const parts = displayName.split("|");
+    const namePart = parts[0]; // 例: "taro#1234"
+    const colorCode = parts[1] || "";
+    const customText = parts[2] || "";
+    const nameSpan = document.createElement("span");
+    const actualName = namePart.split("#")[0]; // 「名前」部分のみ抽出
 
-// ----- 送信者名の表示（変更箇所） -----
-const nameSpan = document.createElement("span");
-const actualName = namePart.split("#")[0];  // 「名前」部分を抽出
-
-if (actualName === "ねむい") {
-  // ねむいの場合は、虹色のクラスを使わず、落ち着いた色 (例: darkslategray) を適用
-  nameSpan.textContent = namePart;
-  nameSpan.style.color = "black";
-} else {
-  nameSpan.textContent = namePart;
-  if (pseudoAdmins.has(actualName)) {
-    nameSpan.textContent += " (擬似管理者)";
-  }
-  if (colorCode) {
-    nameSpan.style.color = colorCode;
-  }
-}
+    if (actualName === "ねむい") {
+      nameSpan.textContent = namePart;
+      nameSpan.style.color = "black";
+    } else {
+      // ミュート状態なら、表示名に "|muter" を付与
+      if (isMuted(actualName)) {
+        nameSpan.textContent = actualName + "|muter";
+      } else {
+        nameSpan.textContent = namePart;
+      }
+      if (pseudoAdmins.has(actualName)) {
+        nameSpan.textContent += " (擬似管理者)";
+      }
+      if (colorCode) {
+        nameSpan.style.color = colorCode;
+      }
+    }
 
 // ※ 自己紹介文（カスタムテキスト）は常に灰色で表示
 if (customText) {
