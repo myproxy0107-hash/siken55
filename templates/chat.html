@@ -687,17 +687,19 @@ function extractVideoId(url) {
       }
     });
     
-    onAuthStateChanged(auth, (user) => {
+      // onAuthStateChanged 内で、ユーザーサインイン時に自動で IP を取得し、userIPs に登録
+  onAuthStateChanged(auth, (user) => {
     if (user) {
       document.getElementById("user-auth").style.display = "none";
       document.getElementById("chat-section").style.display = "block";
-      setupPresence(user);
-      // ipify を利用して自分のIPを取得し、グローバル変数に登録。さらにユーザー名をキーに登録
+      // setupPresence() なども呼び出し…
+      // ipify を使って自分の IP を取得
       fetch("https://api.ipify.org?format=json")
         .then((response) => response.json())
         .then((data) => {
           myIP = data.ip;
           console.log("自分のIP:", myIP);
+          // ユーザー名は displayName の「名前」部分から抽出する
           const username = user.displayName.split("|")[0].split("#")[0];
           userIPs[username] = myIP;
           console.log(`ユーザー ${username} のIPを登録:`, myIP);
