@@ -478,21 +478,7 @@
     const db = getFirestore(appFB);
     const dbRT = getDatabase(appFB);
     
-    <!-- Firebase & チャット機能の実装 -->
-<script type="module">
-  // Firebase モジュールのインポート等（省略、これまでのコードと同じ）
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, deleteDoc, getDocs, updateDoc, onSnapshot, query, orderBy, getDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-  import { getDatabase, ref, onDisconnect, set, serverTimestamp, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-
-  // Firebase 設定＆初期化
-  const firebaseConfig = { /* （これまでの設定内容） */ };
-  const appFB = initializeApp(firebaseConfig);
-  const auth = getAuth(appFB);
-  const db = getFirestore(appFB);
-  const dbRT = getDatabase(appFB);
-
+    
   // グローバル変数
   const MAX_MESSAGES = 50;
   let pseudoAdmins = new Set();
