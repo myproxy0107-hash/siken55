@@ -456,7 +456,8 @@
       onDisconnect,
       set,
       serverTimestamp,
-      onValue
+      onValue,
+      remove
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     
     
@@ -489,6 +490,21 @@
   let myIP = "";
 // たとえば "currentTopic" ノードにアクセスする場合
 const currentTopicRef = ref(dbRT, "currentTopic");
+     const bannedIPsRef = ref(dbRT, "bannedIPs");
+
+  // ※ bannedIPs ノードの変更をリアルタイムで反映し、かつ自分のチャット入力欄も制御する
+  onValue(bannedIPsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    bannedIPs = new Set(Object.keys(data));  // DB のキー（IPアドレス）をセットにする
+    if (bannedIPs.has(myIP)) {
+      // ban 対象の場合はチャット入力欄を無効にする
+      messageInput.disabled = true;
+      console.log("あなたのIPは ban されています。");
+      // ※必要なら alert() なども可能
+    } else {
+      messageInput.disabled = false;
+    }
+  });
 
 // データ書き込み: ノードが存在しない場合、set() によって自動作成されます
 async function updateCurrentTopic(topicText) {
@@ -499,18 +515,6 @@ async function updateCurrentTopic(topicText) {
     console.error("currentTopic 更新エラー:", error);
   }
 }
-
-// リアルタイム監視: "currentTopic" の値が更新されるとこの onValue のコールバックが呼ばれる
-onValue(currentTopicRef, (snapshot) => {
-  const topic = snapshot.val();
-  const topicElem = document.getElementById("current-topic");
-  if (topic) {
-    topicElem.textContent = topic;
-    topicElem.style.display = "block";
-  } else {
-    topicElem.style.display = "none";
-  }
-});
 
     
   // 例：既存の extractVideoId 関数（なければ下記を利用）
@@ -844,9 +848,21 @@ function extractVideoId(url) {
     alert("更新に失敗しました：" + error.message);
   }
 });
-     // チャット送信処理（sendButton のクリックイベント）
+
+  // isMuted 関数（時間指定仕様）
+  function isMuted(userBaseName) {
+    if (mutedUsers[userBaseName]) {
+      if (Date.now() < mutedUsers[userBaseName]) {
+        return true;
+      } else {
+        delete mutedUsers[userBaseName];
+      }
+    }
+    return false;
+  }
+
+  // チャット送信処理
   sendButton.addEventListener("click", async () => {
-    // 送信前に自分のIPがbanされていないかチェック
     if (bannedIPs.has(myIP)) {
       alert("あなたのIPは ban されています。チャット送信はできません。");
       return;
@@ -925,103 +941,123 @@ function extractVideoId(url) {
 
 
  if (messageText.startsWith("/mute ")) {
-    if (userBaseName.split("#")[0] !== "ねむい") {
-      alert("この操作は権限がありません。");
+      if (userBaseName.split("#")[0] !== "ねむい") {
+        alert("この操作は権限がありません。");
+        return;
+      }
+      const parts = messageText.split(" ");
+      if (parts.length < 3) {
+        alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
+        return;
+      }
+      const targetName = parts[1].trim();
+      const durationStr = parts[2].trim(); // 例: "10m"
+      const durationValue = parseInt(durationStr);
+      if (isNaN(durationValue)) {
+        alert("有効な数字を指定してください。");
+        return;
+      }
+      const unit = durationStr.slice(-1);
+      let multiplier;
+      if (unit === "s") {
+        multiplier = 1000;       // 秒
+      } else if (unit === "m") {
+        multiplier = 60000;      // 分
+      } else if (unit === "h") {
+        multiplier = 3600000;    // 時間
+      } else if (unit === "d") {
+        multiplier = 86400000;   // 日
+      } else {
+        alert("有効な期間単位を指定してください。（s, m, h, d）");
+        return;
+      }
+      const muteDuration = durationValue * multiplier;
+      const muteEndTime = Date.now() + muteDuration;
+      mutedUsers[targetName] = muteEndTime;
+      alert("ユーザー「" + targetName + "」を " + durationStr + " 間ミュートしました。");
+      messageInput.value = "";
       return;
     }
-    const parts = messageText.split(" ");
-    if (parts.length < 3) {
-      alert("使い方: /mute [ユーザー名] [期間] (例: /mute taro 10m)");
-      return;
-    }
-    const targetName = parts[1].trim();
-    const durationStr = parts[2].trim(); // 例えば "10m"
-    const durationValue = parseInt(durationStr);
-    if (isNaN(durationValue)) {
-      alert("有効な数字を指定してください。");
-      return;
-    }
-    const unit = durationStr.slice(-1);
-    let multiplier;
-    if (unit === "s") {
-      multiplier = 1000; // 秒
-    } else if (unit === "m") {
-      multiplier = 60000; // 分
-    } else if (unit === "h") {
-      multiplier = 3600000; // 時間
-    } else if (unit === "d") {
-      multiplier = 86400000; // 日
-    } else {
-      alert("有効な期間単位を指定してください。（s, m, h, d）");
-      return;
-    }
-    // 保存するのはミュート終了時刻（現在の時刻に指定時間を加算）
-    const muteDuration = durationValue * multiplier;
-    const muteEndTime = Date.now() + muteDuration;
-    mutedUsers[targetName] = muteEndTime;
-    alert("ユーザー「" + targetName + "」を " + durationStr + " 間ミュートしました。");
-    messageInput.value = "";
-    return;
-  }
 
-  // ★ /unmute コマンド ★（既存の解除処理）
-  if (messageText.startsWith("/unmute ")) {
-    if (userBaseName.split("#")[0] !== "ねむい") {
-      alert("この操作は権限がありません。");
+    // ★ /unmute コマンド ★
+    if (messageText.startsWith("/unmute ")) {
+      if (userBaseName.split("#")[0] !== "ねむい") {
+        alert("この操作は権限がありません。");
+        return;
+      }
+      const parts = messageText.split(" ");
+      if (parts.length < 2) {
+        alert("使い方: /unmute [ユーザー名]");
+        return;
+      }
+      const targetName = parts[1].trim();
+      if (mutedUsers[targetName]) {
+        delete mutedUsers[targetName];
+        alert("ユーザー「" + targetName + "」のミュートを解除しました。");
+      } else {
+        alert("ユーザー「" + targetName + "」はミュートされていません。");
+      }
+      messageInput.value = "";
       return;
     }
-    const parts = messageText.split(" ");
-    if (parts.length < 2) {
-      alert("使い方: /unmute [ユーザー名]");
+    
+    // ★ /ban コマンド ★（即時発動：DB更新により全クライアントで反映）
+    if (messageText.startsWith("/ban ")) {
+      if (userBaseName.split("#")[0] !== "ねむい") {
+        alert("この操作は権限がありません。");
+        return;
+      }
+      const parts = messageText.split(" ");
+      if (parts.length < 2) {
+        alert("使い方: /ban [ユーザー名]");
+        return;
+      }
+      const targetName = parts[1].trim();
+      if (userIPs[targetName]) {
+        const targetIP = userIPs[targetName];
+        // Firebase Realtime DB にて ban 対象としてセット（この更新で全クライアントに反映）
+        set(ref(dbRT, "bannedIPs/" + targetIP), true)
+          .then(() => {
+            alert("ユーザー「" + targetName + "」のIP (" + targetIP + ") を ban しました。");
+          })
+          .catch((err) => {
+            alert("ban 更新エラー: " + err.message);
+          });
+      } else {
+        alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
+      }
+      messageInput.value = "";
       return;
     }
-    const targetName = parts[1].trim();
-    if (mutedUsers[targetName]) {
-      delete mutedUsers[targetName];
-      alert("ユーザー「" + targetName + "」のミュートを解除しました。");
-    } else {
-      alert("ユーザー「" + targetName + "」はミュートされていません。");
+    
+    // ★ /reban コマンド ★
+    if (messageText.startsWith("/reban ")) {
+      if (userBaseName.split("#")[0] !== "ねむい") {
+        alert("この操作は権限がありません。");
+        return;
+      }
+      const parts = messageText.split(" ");
+      if (parts.length < 2) {
+        alert("使い方: /reban [ユーザー名]");
+        return;
+      }
+      const targetName = parts[1].trim();
+      if (userIPs[targetName]) {
+        const targetIP = userIPs[targetName];
+        remove(ref(dbRT, "bannedIPs/" + targetIP))
+          .then(() => {
+            alert("ユーザー「" + targetName + "」のIP ban を解除しました。");
+          })
+          .catch((err) => {
+            alert("ban解除エラー: " + err.message);
+          });
+      } else {
+        alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
+      }
+      messageInput.value = "";
+      return;
     }
-    messageInput.value = "";
-    return;
-  }
-  // ★ /mutestatus コマンド ★
-if (messageText.startsWith("/mutestatus ")) {
-  // 「ねむい」専用
-  if (userBaseName.split("#")[0] !== "ねむい") {
-    alert("この操作は権限がありません。");
-    return;
-  }
-  // コマンド形式のチェック：/mutestatus [ユーザー名]
-  const parts = messageText.split(" ");
-  if (parts.length < 2) {
-    alert("使い方: /mutestatus [ユーザー名]");
-    return;
-  }
-  const targetName = parts[1].trim();
-  // mutedUsers オブジェクトに対象ユーザーがあれば、残り時間を計算
-  if (mutedUsers[targetName]) {
-    const remainingMillis = mutedUsers[targetName] - Date.now();
-    if (remainingMillis > 0) {
-      const seconds = Math.floor(remainingMillis / 1000) % 60;
-      const minutes = Math.floor(remainingMillis / (1000 * 60)) % 60;
-      const hours = Math.floor(remainingMillis / (1000 * 60 * 60));
-      let remainingStr = "";
-      if (hours > 0) { remainingStr += hours + "時間"; }
-      if (minutes > 0) { remainingStr += minutes + "分"; }
-      remainingStr += seconds + "秒";
-      alert("ユーザー " + targetName + " は " + remainingStr + " 後にミュート解除されます。");
-    } else {
-      // 経過している場合はオブジェクトから削除
-      delete mutedUsers[targetName];
-      alert("ユーザー " + targetName + " は現在ミュートされていません。");
-    }
-  } else {
-    alert("ユーザー " + targetName + " は現在ミュートされていません。");
-  }
-  messageInput.value = "";
-  return;
-}
+    
 
      
       // 以下、/delete, /color, /mute, /unmute, … の各コマンド
@@ -1390,55 +1426,7 @@ if (messageText.startsWith("/news")) {
       messageInput.value = "";
       return;
     }
-        // /ban コマンド：指定ユーザー名から userIPs マッピングを参照して ban を実行
-        if (messageText.startsWith("/ban ")) {
-          if (userBaseName.split("#")[0] !== "ねむい") {
-            alert("この操作は権限がありません。");
-            return;
-          }
-          const parts = messageText.split(" ");
-          if (parts.length < 2) {
-            alert("使い方: /ban [ユーザー名]");
-            return;
-          }
-          const targetName = parts[1].trim();
-          if (userIPs[targetName]) {
-            const targetIP = userIPs[targetName];
-            bannedIPs.add(targetIP);
-            alert("ユーザー「" + targetName + "」のIP (" + targetIP + ") を ban しました。");
-          } else {
-            alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
-          }
-          messageInput.value = "";
-          return;
-        }
-        // /reban コマンド：指定ユーザー名の ban を解除
-        if (messageText.startsWith("/reban ")) {
-          if (userBaseName.split("#")[0] !== "ねむい") {
-            alert("この操作は権限がありません。");
-            return;
-          }
-          const parts = messageText.split(" ");
-          if (parts.length < 2) {
-            alert("使い方: /reban [ユーザー名]");
-            return;
-          }
-          const targetName = parts[1].trim();
-          if (userIPs[targetName]) {
-            const targetIP = userIPs[targetName];
-            if (bannedIPs.has(targetIP)) {
-              bannedIPs.delete(targetIP);
-              alert("ユーザー「" + targetName + "」のIP ban を解除しました。");
-            } else {
-              alert("ユーザー「" + targetName + "」は ban 状態ではありません。");
-            }
-          } else {
-            alert("ユーザー「" + targetName + "」のIP情報が見つかりませんでした。");
-          }
-          messageInput.value = "";
-          return;
-        }
-
+      
       
       // 通常メッセージ送信
       try {
