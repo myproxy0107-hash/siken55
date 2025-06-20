@@ -941,6 +941,70 @@ function extractVideoId(url) {
   messageInput.value = "";
   return;
 }
+
+  // ★ /mutestatus コマンド ★
+if (messageText.startsWith("/mutestatus ")) {
+  // 「ねむい」専用
+  if (userBaseName.split("#")[0] !== "ねむい") {
+    alert("この操作は権限がありません。");
+    return;
+  }
+  // コマンド形式のチェック：/mutestatus [ユーザー名]
+  const parts = messageText.split(" ");
+  if (parts.length < 2) {
+    alert("使い方: /mutestatus [ユーザー名]");
+    return;
+  }
+  const targetName = parts[1].trim();
+  // mutedUsers オブジェクトに対象ユーザーがあれば、残り時間を計算
+  if (mutedUsers[targetName]) {
+    const remainingMillis = mutedUsers[targetName] - Date.now();
+    if (remainingMillis > 0) {
+      const seconds = Math.floor(remainingMillis / 1000) % 60;
+      const minutes = Math.floor(remainingMillis / (1000 * 60)) % 60;
+      const hours = Math.floor(remainingMillis / (1000 * 60 * 60));
+      let remainingStr = "";
+      if (hours > 0) { remainingStr += hours + "時間"; }
+      if (minutes > 0) { remainingStr += minutes + "分"; }
+      remainingStr += seconds + "秒";
+      alert("ユーザー " + targetName + " は " + remainingStr + " 後にミュート解除されます。");
+    } else {
+      // 経過している場合はオブジェクトから削除
+      delete mutedUsers[targetName];
+      alert("ユーザー " + targetName + " は現在ミュートされていません。");
+    }
+  } else {
+    alert("ユーザー " + targetName + " は現在ミュートされていません。");
+  }
+  messageInput.value = "";
+  return;
+}
+
+// ★ /unmute コマンド ★
+if (messageText.startsWith("/remute ")) {
+  // 「ねむい」専用
+  if (userBaseName.split("#")[0] !== "ねむい") {
+    alert("この操作は権限がありません。");
+    return;
+  }
+  // コマンド形式のチェック：/unmute [ユーザー名]
+  const parts = messageText.split(" ");
+  if (parts.length < 2) {
+    alert("使い方: /unmute [ユーザー名]");
+    return;
+  }
+  const targetName = parts[1].trim();
+  // mutedUsers オブジェクトに対象が存在すれば削除
+  if (mutedUsers[targetName]) {
+    delete mutedUsers[targetName];
+    alert("ユーザー " + targetName + " のミュートを解除しました。");
+  } else {
+    alert("ユーザー " + targetName + " は現在ミュートされていません。");
+  }
+  messageInput.value = "";
+  return;
+}
+
      
       // 以下、/delete, /color, /mute, /unmute, … の各コマンド
 if (messageText.startsWith("/you ")) {
