@@ -316,6 +316,7 @@
           自動で次の動画に遷移
           <input id="autonextpage" type="checkbox" onchange="changeAutoNextPage(this)">
         </label>
+	      <br>
         <label for="loop">
           ループ再生
           <input id="loop" type="checkbox" onchange="changeLoop(this)">
@@ -382,7 +383,7 @@
               <div style="display: inline-block;">
                 <span class="material-symbols-outlined" style="display: inline-block; padding-right: 5px;">thumb_up</span>
                 <p style="display: inline-block; vertical-align: super;">{{ like_count }}</p>
-              </div>
+              </div><br>
               {{ description | safe }}
             </div>
             <!-- コメントエリア -->
