@@ -481,6 +481,16 @@
     const MAX_MESSAGES = 50;
     let pseudoAdmins = new Set();
     let mutedUsers = {};
+    let lastSendTime = 0;
+
+  // /omi, /poker の1日5回制限
+  const usageLimits = {
+    omi:   { date: new Date().toLocaleDateString(), count: 0 },
+    poker: { date: new Date().toLocaleDateString(), count: 0 }
+  };
+
+  // 自分が一度送信した通常メッセージを記録（重複禁止）
+  const sentMessages = new Set();
 // たとえば "currentTopic" ノードにアクセスする場合
 const currentTopicRef = ref(dbRT, "currentTopic");
 
@@ -822,13 +832,53 @@ function extractVideoId(url) {
   }
 });
     sendButton.addEventListener("click", async () => {
-      const messageText = messageInput.value;
-      if (messageText.trim() === "") return;
-      const user = auth.currentUser;
-      if (!user) {
-        alert("まずログインしてください。");
+    const now = Date.now();
+    // 3秒クールタイムチェック
+    if (now - lastSendTime < 3000) {
+      alert("3秒待ってから再度送信してください。");
+      return;
+    }
+
+    const rawText = messageInput.value.trim();
+    if (!rawText) return;
+
+    // コマンドでない通常メッセージは重複禁止
+    if (!rawText.startsWith("/") && sentMessages.has(rawText)) {
+      alert("同じメッセージは繰り返せません。");
+      return;
+    }
+
+    // 日付が変わったらカウントリセット
+    const today = new Date().toLocaleDateString();
+    for (let cmd of ["omi","poker"]) {
+      if (usageLimits[cmd].date !== today) {
+        usageLimits[cmd].date  = today;
+        usageLimits[cmd].count = 0;
+      }
+    }
+
+    // /omi 日次5回制限
+    if (rawText.startsWith("/omi")) {
+      if (usageLimits.omi.count >= 5) {
+        alert("おみくじは1日5回までです。");
         return;
       }
+      usageLimits.omi.count++;
+    }
+    // /poker 日次5回制限
+    if (rawText.startsWith("/poker")) {
+      if (usageLimits.poker.count >= 5) {
+        alert("ポーカーは1日5回までです。");
+        return;
+      }
+      usageLimits.poker.count++;
+    }
+
+    // この時点で送信 OK
+    lastSendTime = now;
+    if (!rawText.startsWith("/")) {
+      sentMessages.add(rawText);
+    }
       // 掲示場で表示する際は、displayNameの「名前#ID」部分（色情報を除く）をそのまま表示
       const userBaseName = user.displayName.split("|")[0];
       
@@ -1223,6 +1273,15 @@ if (messageText.startsWith("/news")) {
         console.log("ログアウト成功");
       } catch (error) {
         alert("ログアウトエラー: " + error.message);
+      }
+    });
+    const chatQuery = query(collection(db, "chat"), orderBy("timestamp", "asc"));
+  onSnapshot(chatQuery, async snapshot => {
+    // 削除されたメッセージのテキストを sentMessages から除外
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "removed") {
+        const txt = change.doc.data().text;
+        sentMessages.delete(txt);
       }
     });
     
