@@ -1284,19 +1284,18 @@ if (messageText.startsWith("/news")) {
         sentMessages.delete(txt);
       }
     });
-    
-    const chatQuery = query(collection(db, "chat"), orderBy("timestamp", "asc"));
-    onSnapshot(chatQuery, async (snapshot) => {
-      if (snapshot.docs.length > MAX_MESSAGES) {
-        const deleteCount = snapshot.docs.length - MAX_MESSAGES;
-        for (let i = 0; i < deleteCount; i++) {
-          try {
-            await deleteDoc(snapshot.docs[i].ref);
-          } catch (err) {
-            console.error("古いメッセージ削除エラー:", err);
-          }
+
+    // 古いメッセージの自動削除ロジック
+    if (snapshot.docs.length > MAX_MESSAGES) {
+      const excess = snapshot.docs.length - MAX_MESSAGES;
+      for (let i = 0; i < excess; i++) {
+        try {
+          await deleteDoc(snapshot.docs[i].ref);
+        } catch (e) {
+          console.error(e);
         }
       }
+    }
       chatBox.innerHTML = "";
 // 既存の snapshot.forEach 内で各メッセージの HTML を生成する部分
 snapshot.forEach((doc) => {
