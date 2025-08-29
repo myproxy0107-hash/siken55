@@ -1,4 +1,0 @@
-python-multipart
-flask
-beautifulsoup4 
-apscheduler
