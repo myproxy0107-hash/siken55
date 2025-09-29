@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: keron-jp
+    name: sleepy-plus
     env: python
     region: Oregon
     plan: free
