@@ -882,10 +882,11 @@
         };
       })();
     </script>
-    <script>
+ <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const vcSelect = document.getElementById('vcSelectPanel');
   const saveBtn = document.getElementById('settingsSaveBtn');
+  const vcSelect = document.getElementById('vcSelectPanel');
+  if (!saveBtn || !vcSelect) return;
 
   function vcToPath(vc) {
     switch(String(vc)) {
@@ -902,57 +903,32 @@ document.addEventListener('DOMContentLoaded', function () {
     document.cookie = 'vc=' + encodeURIComponent(String(val)) + ';expires=' + d.toUTCString() + ';path=/';
   }
 
-  function replaceToVcPath(vcValue) {
+  function tryReplace(vcValue) {
     try {
       const targetPath = vcToPath(vcValue);
       const query = window.location.search || '';
-      // 既に同じパスなら何もしない
       if (window.location.pathname === targetPath) return;
-      // 履歴を残さず置き換えて遷移
       location.replace(targetPath + query);
-    } catch (e) {
-      console.warn('vc replace failed', e);
-    }
+    } catch (e) { console.warn('vc replace failed', e); }
   }
 
-  // select の変更で即時反映（cookie 記録と遷移）
-  if (vcSelect) {
-    vcSelect.addEventListener('change', function () {
-      const val = vcSelect.value;
-      setVcCookie(val);
-      replaceToVcPath(val);
-    });
-  }
-
-  // 保存ボタンでも反映（既存の保存処理を優先するため短い遅延で実行）
-  if (saveBtn) {
+  // 重複アタッチ防止
+  if (!saveBtn.__vc_replace_attached__) {
     saveBtn.addEventListener('click', function () {
-      const val = vcSelect ? vcSelect.value : '0';
-      setVcCookie(val);
-      setTimeout(function () { replaceToVcPath(val); }, 40);
-    });
+      // 既存の保存処理が先に走るよう短い遅延で実行
+      setTimeout(function () {
+        try {
+          const val = vcSelect.value || '0';
+          setVcCookie(val);
+          tryReplace(val);
+        } catch (e) { console.warn('post-save replace error', e); }
+      }, 40);
+    }, false);
+    saveBtn.__vc_replace_attached__ = true;
   }
-
-  // ページ読み込み時に cookie に従ってパスを合わせたい場合（任意）
-  // 例えばページに来た時点で cookie が /ume を指定していれば自動で置き換えたい場合は有効にする：
-  (function syncOnLoadFromCookie() {
-    try {
-      const m = document.cookie.match('(^|;)\\s*vc\\s*=\\s*([^;]+)');
-      if (!m) return;
-      const cookieVal = decodeURIComponent(m.pop());
-      const desiredPath = vcToPath(cookieVal);
-      if (window.location.pathname !== desiredPath) {
-        // 注意: 自動置換を有効にしたくない場合はこのブロックを削除またはコメントアウトしてください
-        location.replace(desiredPath + (window.location.search || ''));
-      } else {
-        // もし select があるなら値を同期しておく
-        if (vcSelect) vcSelect.value = cookieVal;
-      }
-    } catch(e){ /* noop */ }
-  })();
-
 });
 </script>
+
 
   </body>
 </html>
