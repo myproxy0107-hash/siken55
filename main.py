@@ -318,6 +318,41 @@ def getCommentsData(videoid):
 def get_replies(videoid, key):
     t = json.loads(requestAPI(f"/comments/{videoid}?hmac_key={key}&hl=jp&format=html", invidious_api.comments))["contentHtml"]
 '''
+# --- 追加 / 置換: YouTube Education 用 embed URL を構築するヘルパー ---
+def fetch_embed_url_from_video_config(videoid, config_url="https://raw.githubusercontent.com/siawaseok3/wakame/master/video_config.json", timeout=max_api_wait_time):
+    """
+    指定された video_config.json から params を読み取り、
+    https://www.youtubeeducation.com/embed/{videoid}{params}
+    を返す。
+    - videoid: YouTube の video id（文字列）
+    - config_url: JSON を取得する URL（デフォルトは指定された raw URL）
+    - 戻り値: 組み立てた embed URL（例: https://www.youtubeeducation.com/embed/abcd1234?autoplay=1）
+    - 取得失敗や JSON不正時は None を返す（呼び出し側でフォールバック可能）
+    """
+    try:
+        res = requests.get(config_url, headers=getRandomUserAgent(), timeout=timeout)
+        res.raise_for_status()
+        if not isJSON(res.text):
+            return None
+        cfg = json.loads(res.text)
+        # config の構造によってキー名が異なる可能性があるため安全に取得
+        params = ""
+        if isinstance(cfg, dict):
+            # 典型的なキー名を順に試す
+            if "params" in cfg and isinstance(cfg["params"], str):
+                params = cfg["params"]
+            elif "param" in cfg and isinstance(cfg["param"], str):
+                params = cfg["param"]
+            # 他に params を含む場所があればここに追加
+        # params が None か空文字列でないことだけを要件にする
+        if params is None:
+            params = ""
+        # params は先頭が ? になっている想定。ただしファイルによっては既に ? を含むかもしれないのでそのまま連結する
+        embed_url = f"https://www.youtubeeducation.com/embed/{videoid}{params}"
+        return embed_url
+    except Exception:
+        return None
+
 
 
 def checkCookie(cookie):
@@ -341,7 +376,7 @@ from fastapi.responses import RedirectResponse as redirect
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Union
+from typing import Union ,Optional
 from fastapi import Form
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -518,42 +553,40 @@ def ume_video(v: str, response: Response, request: Request, yuki: Union[str, Non
         "recommended_videos": video_data[1],
         "proxy":proxy
     })
-  
-@app.get('/ww', response_class=HTMLResponse)
-def video(v:str, response: Response, request: Request, yuki: Union[str] = Cookie(None), proxy: Union[str] = Cookie(None)):
-    # v: video_id
-    if not(checkCookie(yuki)):
+@app.get('/edu', response_class=HTMLResponse)
+def ume_video(v: str, response: Response, request: Request, yuki: Union[str, None] = Cookie(None), proxy: Union[str, None] = Cookie(None)):
+    if not checkCookie(yuki):
         return redirect("/")
-    response.set_cookie(key="yuki", value="True", max_age=7*24*60*60)
+    response.set_cookie("yuki", "True", max_age=7*24*60*60)
+
+    # 既存の動画データ取得（変更なし）
     video_data = getVideoData(v)
-    '''
-    return [
-        {
-            'video_urls': list(reversed([i["url"] for i in t["formatStreams"]]))[:2],
-            'description_html': t["descriptionHtml"].replace("\n", "<br>"),
-            'title': t["title"],
-            'length_text': str(datetime.timedelta(seconds=t["lengthSeconds"]))
-            'author_id': t["authorId"],
-            'author': t["author"],
-            'author_thumbnails_url': t["authorThumbnails"][-1]["url"],
-            'view_count': t["viewCount"],
-            'like_count': t["likeCount"],
-            'subscribers_count': t["subCountText"]
-            'streamUrls': streamUrls
-        },
-        [
-            {
-                "title": i["title"],
-                "author_id": i["authorId"],
-                "author": i["author"],
-                "length_text": str(datetime.timedelta(seconds=i["lengthSeconds"])),
-                "view_count_text": i["viewCountText"]
-            } for i in recommended_videos
-        ]
-    ]
-    '''
+
+    # --- ここから追加: video_config.json から params を読み、embed_url を組み立てる ---
+    embed_url = None
+    try:
+        # 指定された raw JSON を使う（要求どおりの URL）
+        cfg_res = requests.get("https://raw.githubusercontent.com/siawaseok3/wakame/master/video_config.json", headers=getRandomUserAgent(), timeout=max_api_wait_time)
+        cfg_res.raise_for_status()
+        if isJSON(cfg_res.text):
+            cfg = json.loads(cfg_res.text)
+            params = ""
+            if isinstance(cfg, dict):
+                if "params" in cfg and isinstance(cfg["params"], str):
+                    params = cfg["params"]
+                elif "param" in cfg and isinstance(cfg["param"], str):
+                    params = cfg["param"]
+            if params is None:
+                params = ""
+            # 組み立て: 必ず https://www.youtubeeducation.com/embed/{videoid}{params}
+            embed_url = f"https://www.youtubeeducation.com/embed/{v}{params}"
+    except Exception:
+        # 失敗時は embed_url を None にして従来フローを維持
+        embed_url = None
+    # --- ここまで追加 ---
+
     response.set_cookie("yuki", "True", max_age=60 * 60 * 24 * 7)
-    return template('watch.html', {
+    return template('edu.html', {
         "request": request,
         "videoid": v,
         "videourls": video_data[0]['video_urls'],
@@ -566,18 +599,28 @@ def video(v:str, response: Response, request: Request, yuki: Union[str] = Cookie
         "view_count": video_data[0]['view_count'],
         "like_count": video_data[0]['like_count'],
         "subscribers_count": video_data[0]['subscribers_count'],
-        "streamUrls": video_data[0]['streamUrls'],
         "recommended_videos": video_data[1],
-        "proxy":proxy
+        "proxy": proxy,
+        "embed_url": embed_url
     })
-
 @app.get("/search", response_class=HTMLResponse)
-def search(q:str, response: Response, request: Request, page:Union[int, None]=1, yuki: Union[str] = Cookie(None), proxy: Union[str] = Cookie(None)):
+def search(q: str, response: Response, request: Request, page: Union[int, None] = 1,
+           yuki: Union[str] = Cookie(None), proxy: Union[str] = Cookie(None)):
     if not(checkCookie(yuki)):
         return redirect("/")
     response.set_cookie("yuki", "True", max_age=60 * 60 * 24 * 7)
-    return template("search.html", {"request": request, "results":getSearchData(q, page), "word":q, "next":f"/search?q={q}&page={page + 1}", "proxy":proxy})
 
+    # クッキー vc を取得（無ければ '0' をデフォルト）
+    vc_cookie = request.cookies.get("vc", "0")
+
+    return template("search.html", {
+        "request": request,
+        "results": getSearchData(q, page),
+        "word": q,
+        "next": f"/search?q={q}&page={page + 1}",
+        "proxy": proxy,
+        "vc": vc_cookie
+    })
 @app.get("/hashtag/{tag}")
 def search(tag:str, response: Response, request: Request, page:Union[int, None]=1, yuki: Union[str] = Cookie(None)):
     if not(checkCookie(yuki)):
@@ -851,9 +894,9 @@ def list_page(response: Response, request: Request):
 @app.get("/tools", response_class=HTMLResponse)
 def list_page(response: Response, request: Request):
     return template("tools.html", {"request": request})
-@app.get("/news", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
 def list_page(response: Response, request: Request):
-    return template("news.html", {"request": request})
+    return template("settings.html", {"request": request})
 @app.get("/re", response_class=HTMLResponse)
 def list_page(response: Response, request: Request):
     return template("re.html", {"request": request})
